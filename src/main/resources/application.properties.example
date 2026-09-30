@@ -1,0 +1,95 @@
+# ======================================================================
+#  Plantilla de configuración - Spring Boot
+#  Copiar a application.properties y ajustar por entorno
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# Config Server (deshabilitado si no se usa)
+# ----------------------------------------------------------------------
+#spring.config.import=optional:configserver:
+spring.cloud.config.enabled=false
+spring.jackson.time-zone=<ZONA_HORARIA>            # Ej: America/Mexico_City
+
+# ----------------------------------------------------------------------
+# Servidor
+# ----------------------------------------------------------------------
+server.port=<PUERTO>                              # Ej: 8081
+
+# ----------------------------------------------------------------------
+# PostgreSQL
+# ----------------------------------------------------------------------
+spring.datasource.url=jdbc:postgresql://<HOST>:<PUERTO>/<BASE_DATOS>
+spring.datasource.username=<USUARIO>
+spring.datasource.password=<CONTRASENA>
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# ----------------------------------------------------------------------
+# JPA / Hibernate
+# ----------------------------------------------------------------------
+spring.jpa.open-in-view=false
+spring.jpa.hibernate.ddl-auto=none               # none | update | validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.jakarta.persistence.query.timeout=600000
+
+# ----------------------------------------------------------------------
+# HikariCP (pool de conexiones)
+# ----------------------------------------------------------------------
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=2
+spring.datasource.hikari.max-lifetime=18800
+spring.datasource.hikari.connection-timeout=5000
+spring.datasource.hikari.validation-timeout=5000
+spring.datasource.hikari.connection-test-query=SELECT 1
+
+# ----------------------------------------------------------------------
+# Flyway (migraciones de Base de Datos)
+# ----------------------------------------------------------------------
+spring.flyway.locations=classpath:db/migration
+spring.flyway.table=flyway_schema_history
+spring.flyway.schemas=public
+spring.flyway.baseline-on-migrate=true
+spring.flyway.baseline-version=0
+
+# ----------------------------------------------------------------------
+# GestoPago - Autenticación
+# ----------------------------------------------------------------------
+gestopago.auth.url=https://gestopago.portalventas.net
+gestopago.auth.id-distribuidor=<ID_DISTRIBUIDOR>
+gestopago.auth.codigo-dispositivo=<CODIGO_DISPOSITIVO>
+gestopago.auth.password=<CONTRASENA>
+gestopago.auth.refresh-rate-ms=3600000          # Cada cuántos ms se renueva el token
+
+# ----------------------------------------------------------------------
+# Feign - Timeouts de conexión/lectura
+# ----------------------------------------------------------------------
+spring.cloud.openfeign.client.config.default.connect-timeout=5000
+spring.cloud.openfeign.client.config.default.read-timeout=30000
+
+# ----------------------------------------------------------------------
+# GestoPago - Catálogo de productos (carga programada)
+# ----------------------------------------------------------------------
+gestopago.catalogo.cron=0 0 6 * * *             # Cron diario 06:00
+gestopago.catalogo.startup-delay-ms=3000        # Espera antes de la carga inicial al arrancar
+
+# ----------------------------------------------------------------------
+# MongoDB (catálogo)
+# ----------------------------------------------------------------------
+spring.data.mongodb.uri=mongodb://<USUARIO>:<CONTRASENA>@<HOST>:<PUERTO>/<BASE_DATOS>?authSource=admin
+
+# ----------------------------------------------------------------------
+# Swagger / OpenAPI / Springdoc
+# ----------------------------------------------------------------------
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.api-docs.path=/v3/api-docs
+
+# ----------------------------------------------------------------------
+# Actuator (monitoreo)
+# ----------------------------------------------------------------------
+management.endpoints.web.exposure.include=health,info
+management.endpoint.health.show-details=always
+
+# ----------------------------------------------------------------------
+# Logging
+# ----------------------------------------------------------------------
+logging.level.com.proyecto.servicios=INFO
