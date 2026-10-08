@@ -1,5 +1,5 @@
 # Etapa de construcción
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 COPY gradlew .
 COPY gradle gradle
@@ -12,7 +12,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew build -x test
 
 # Etapa de ejecución
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
