@@ -1,19 +1,20 @@
-package com.proyecto.servicios.model;
+package com.proyecto.servicios.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+import java.time.LocalDateTime;
+
+@Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class GenericResponse<T> {
-    private Integer codigo;
     private String mensaje;
+    private int status;
+    private LocalDateTime timestamp;
     private T data;
     private Object errores;
 }
