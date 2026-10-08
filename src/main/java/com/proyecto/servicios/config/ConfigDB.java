@@ -28,7 +28,8 @@ import java.util.Map;
 @EnableJpaRepositories(
         basePackages = {
                 "com.proyecto.servicios.repositorys.sf",
-                "com.proyecto.servicios.repositorys.gestopago"
+                "com.proyecto.servicios.repositorys.gestopago",
+                "com.proyecto.servicios.repository.onboarding"
         },
         transactionManagerRef = "sfTransactionManager",
         entityManagerFactoryRef = "sfEntityManagerFactory"
@@ -41,9 +42,9 @@ public class ConfigDB {
     public DataSource sfDatasource(){
         HikariConfig config=new HikariConfig();
         try{
-            config.setJdbcUrl(env.getProperty("spring.datasource.url"));
-            config.setPassword(env.getProperty("spring.datasource.password"));
-            config.setUsername(env.getProperty("spring.datasource.username"));
+            config.setJdbcUrl("jdbc:postgresql://localhost:5432/gestopagos");
+            config.setPassword("admin");
+            config.setUsername("postgres");
             config.setMaximumPoolSize(10);
             config.setMaxLifetime(18800);
             config.setConnectionTimeout(5000);
@@ -67,17 +68,19 @@ public class ConfigDB {
           em.setDataSource(sfDatasource());
           em.setPackagesToScan(
                   "com.proyecto.servicios.entity.sf",
-                  "com.proyecto.servicios.entity.gestopago"
+                  "com.proyecto.servicios.entity.gestopago",
+                  "com.proyecto.servicios.entity.onboarding"
           );
           em.setPersistenceUnitName("sfDatasource");
             HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
             em.setJpaVendorAdapter(vendorAdapter);
           Map<String, Object> properties=new HashMap<>();
-          properties.put("hibernate.hbm2ddl.auto", "none");
-            properties.put("hibernate.show-sql", false);
-            properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-            properties.put("jakarta.persistence.query.timeout", 600000);
-
+          properties.put("hibernate.hbm2ddl.auto", "update");
+          properties.put("hibernate.show-sql", true);
+          properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+          properties.put("jakarta.persistence.query.timeout", 600000);
+          
+          em.setJpaPropertyMap(properties);
 
         } catch (Exception e) {
             log.error("Ha ocurrido un error en la conexion a base de datos, a causa de:",e);
