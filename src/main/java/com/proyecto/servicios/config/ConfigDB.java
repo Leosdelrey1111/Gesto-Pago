@@ -42,9 +42,9 @@ public class ConfigDB {
     public DataSource sfDatasource(){
         HikariConfig config=new HikariConfig();
         try{
-            config.setJdbcUrl("jdbc:postgresql://localhost:5432/gestopagos");
-            config.setPassword("admin");
-            config.setUsername("postgres");
+            config.setJdbcUrl(env.getProperty("spring.datasource.url", "jdbc:postgresql://localhost:5432/gestopagos"));
+            config.setPassword(env.getProperty("spring.datasource.password", "admin"));
+            config.setUsername(env.getProperty("spring.datasource.username", "postgres"));
             config.setMaximumPoolSize(10);
             config.setMaxLifetime(18800);
             config.setConnectionTimeout(5000);
