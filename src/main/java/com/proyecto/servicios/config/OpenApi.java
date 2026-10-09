@@ -13,7 +13,8 @@ public class OpenApi {
     @Bean
     public OpenAPI openAPI(){
         return new OpenAPI()
-                .addServersItem(new Server().url("http://localhost:8080")) // Note: your swagger URL is 8080 according to your screenshots
+                .addServersItem(new Server().url("https://gesto-pago-api.onrender.com").description("Producción (Render)"))
+                .addServersItem(new Server().url("http://localhost:8080").description("Desarrollo Local"))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
                 .components(new Components().addSecuritySchemes("Bearer Authentication", createAPIKeyScheme()));
     }
