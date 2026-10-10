@@ -4,6 +4,7 @@ import com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil;
 import com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad;
 import com.proyecto.servicios.entity.onboarding.catalogos.Sexo;
 import com.proyecto.servicios.entity.onboarding.catalogos.TipoBaja;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -107,12 +108,15 @@ public class Cliente {
     private OffsetDateTime fechaCreacion;
 
     // Relaciones Bidireccionales
+    @JsonIgnore
     @OneToOne(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Domicilio domicilio;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Usuario usuario;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Cuenta> cuentas = new ArrayList<>();
