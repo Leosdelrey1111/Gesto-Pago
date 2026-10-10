@@ -4,6 +4,7 @@ import com.proyecto.servicios.config.security.JwtUtil;
 import com.proyecto.servicios.model.security.AuthRequest;
 import com.proyecto.servicios.model.security.AuthResponse;
 import com.proyecto.servicios.model.security.BiometricAuthRequest;
+import com.proyecto.servicios.exception.UnauthorizedAccessException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +33,7 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(authRequest.getCorreo(), authRequest.getPassword())
             );
         } catch (AuthenticationException e) {
-            throw new RuntimeException("Credenciales inválidas");
+            throw new UnauthorizedAccessException("Credenciales invalidas");
         }
 
         String jwt = jwtUtil.generateToken(authRequest.getCorreo());
