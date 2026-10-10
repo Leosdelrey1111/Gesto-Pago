@@ -5,6 +5,9 @@ import com.proyecto.servicios.entity.onboarding.catalogos.TipoBaja;
 import com.proyecto.servicios.model.onboarding.ClienteActualizaRequest;
 import com.proyecto.servicios.model.onboarding.ClienteRegistroRequest;
 import com.proyecto.servicios.model.response.GenericResponse;
+import com.proyecto.servicios.exception.UnauthorizedAccessException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.proyecto.servicios.model.response.GenericResponse;
 import com.proyecto.servicios.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +68,7 @@ public class ClienteController {
 
     @GetMapping("/{id}")
     public ResponseEntity<GenericResponse<Cliente>> obtenerPorId(@PathVariable Long id) {
+        verificarPropietario(id);
         GenericResponse<Cliente> response = GenericResponse.<Cliente>builder()
                 .mensaje("Consulta exitosa")
                 .data(clienteService.obtenerPorId(id))
@@ -75,6 +79,7 @@ public class ClienteController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<GenericResponse<Cliente>> actualizarParcialmente(@PathVariable Long id, @RequestBody ClienteActualizaRequest request) {
+        verificarPropietario(id);
         GenericResponse<Cliente> response = GenericResponse.<Cliente>builder()
                 .mensaje("Cliente actualizado exitosamente")
                 .data(clienteService.actualizarParcialmente(id, request))
@@ -85,6 +90,7 @@ public class ClienteController {
 
     @PatchMapping("/{id}/bloquear")
     public ResponseEntity<GenericResponse<Void>> bloquearCliente(@PathVariable Long id) {
+        verificarPropietario(id);
         clienteService.bloquear(id);
         GenericResponse<Void> response = GenericResponse.<Void>builder()
                 .mensaje("Cliente bloqueado exitosamente")
@@ -95,6 +101,7 @@ public class ClienteController {
 
     @PatchMapping("/{id}/desbloquear")
     public ResponseEntity<GenericResponse<Void>> desbloquearCliente(@PathVariable Long id) {
+        verificarPropietario(id);
         clienteService.desbloquear(id);
         GenericResponse<Void> response = GenericResponse.<Void>builder()
                 .mensaje("Cliente desbloqueado exitosamente")
@@ -107,11 +114,20 @@ public class ClienteController {
     public ResponseEntity<GenericResponse<Void>> bajaLogica(
             @PathVariable Long id, 
             @RequestParam(required = true) TipoBaja tipoBaja) {
+        verificarPropietario(id);
         clienteService.bajaLogica(id, tipoBaja);
         GenericResponse<Void> response = GenericResponse.<Void>builder()
                 .mensaje("Cliente dado de baja exitosamente")
                 .status(HttpStatus.OK.value())
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    private void verificarPropietario(Long id) {
+        String correoAutenticado = SecurityContextHolder.getContext().getAuthentication().getName();
+        Cliente cliente = clienteService.obtenerPorId(id);
+        if (!cliente.getCorreoElectronico().equals(correoAutenticado)) {
+            throw new UnauthorizedAccessException("No tienes permiso para acceder o modificar este cliente.");
+        }
     }
 }
