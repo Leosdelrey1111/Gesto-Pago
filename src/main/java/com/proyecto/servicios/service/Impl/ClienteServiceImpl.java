@@ -2,57 +2,53 @@ package com.proyecto.servicios.service.Impl;
 
 import com.proyecto.servicios.entity.onboarding.Cliente;
 import com.proyecto.servicios.entity.onboarding.Domicilio;
-import com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil;
-import com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad;
-import com.proyecto.servicios.entity.onboarding.catalogos.Sexo;
 import com.proyecto.servicios.entity.onboarding.catalogos.TipoBaja;
-import com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico;
-import com.proyecto.servicios.entity.onboarding.catalogos.Pais;
 import com.proyecto.servicios.exception.BusinessValidationException;
 import com.proyecto.servicios.exception.DuplicateResourceException;
 import com.proyecto.servicios.exception.ResourceNotFoundException;
+import com.proyecto.servicios.mapper.ClienteMapper;
 import com.proyecto.servicios.model.onboarding.ClienteActualizaRequest;
 import com.proyecto.servicios.model.onboarding.ClienteRegistroRequest;
+import com.proyecto.servicios.model.onboarding.dto.ClienteResponseDTO;
 import com.proyecto.servicios.repository.onboarding.ClienteRepository;
 import com.proyecto.servicios.service.ClienteService;
 import com.proyecto.servicios.service.CuentaService;
 import com.proyecto.servicios.service.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ClienteServiceImpl implements ClienteService {
 
-    @Autowired
-    private ClienteRepository clienteRepository;
-
-    @Autowired
-    private CuentaService cuentaService;
-
-    @Autowired
-    private UsuarioService usuarioService;
+    private final ClienteRepository clienteRepository;
+    private final CuentaService cuentaService;
+    private final UsuarioService usuarioService;
+    private final ClienteMapper clienteMapper;
 
     @Override
     @Transactional
-    public Cliente registrarCliente(ClienteRegistroRequest request) {
-        // Validaciones de negocio
-        if (Period.between(request.getFechaNacimiento(), LocalDate.now()).getYears() < 18) {
-            throw new BusinessValidationException("El cliente debe ser mayor de 18 años");
-        }
-        if (clienteRepository.existsByCurp(request.getCurp())) {
-            throw new DuplicateResourceException("Ya existe un cliente con la CURP proporcionada");
-        }
-        if (clienteRepository.existsByRfc(request.getRfc())) {
-            throw new DuplicateResourceException("Ya existe un cliente con el RFC proporcionado");
-        }
-        if (clienteRepository.existsByCorreoElectronico(request.getCorreoElectronico())) {
-            throw new DuplicateResourceException("Ya existe un cliente con el correo electrónico proporcionado");
-        }
+    public ClienteResponseDTO registrarCliente(ClienteRegistroRequest request) {
+        // Validaciones funcionales sin cascades de if
+        Optional.of(request.getFechaNacimiento())
+                .filter(fecha -> Period.between(fecha, LocalDate.now()).getYears() >= 18)
+                .orElseThrow(() -> new BusinessValidationException("El cliente debe ser mayor de 18 años"));
+
+        validarUnicidad(!clienteRepository.existsByCurp(request.getCurp()), "Ya existe un cliente con la CURP proporcionada");
+        validarUnicidad(!clienteRepository.existsByRfc(request.getRfc()), "Ya existe un cliente con el RFC proporcionado");
+        validarUnicidad(!clienteRepository.existsByCorreoElectronico(request.getCorreoElectronico()), "Ya existe un cliente con el correo electrónico proporcionado");
 
         Cliente cliente = new Cliente();
         cliente.setNombre(request.getNombre());
@@ -87,100 +83,164 @@ public class ClienteServiceImpl implements ClienteService {
         domicilio.setCliente(cliente);
 
         cliente.setDomicilio(domicilio);
-        
+
         Cliente savedCliente = clienteRepository.save(cliente);
 
         // Crear cuenta y usuario automáticamente
         cuentaService.crearCuentaParaCliente(savedCliente.getId());
         usuarioService.crearUsuarioParaCliente(savedCliente.getId(), savedCliente.getCorreoElectronico(), request.getPassword());
 
-        return savedCliente;
+        return clienteMapper.toResponseDTO(savedCliente);
+    }
+
+    // =========================================================================
+    // SOBRECARGA DE MÉTODOS DE BÚSQUEDA Y PAGINACIÓN
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDTO> buscarClientes(Pageable pageable) {
+        return clienteMapper.toResponseDTOPage(clienteRepository.findAll(pageable));
     }
 
     @Override
-    public List<Cliente> obtenerTodos() {
-        return clienteRepository.findAll();
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDTO> buscarClientes(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+        return buscarClientes(pageable);
     }
 
     @Override
-    public Cliente obtenerPorId(Long id) {
-        return clienteRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con id: " + id));
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDTO> buscarClientes(String nombre, String apellidoPaterno, String apellidoMaterno, Pageable pageable) {
+        Specification<Cliente> spec = Specification.where(
+                Optional.ofNullable(nombre)
+                        .filter(n -> !n.isBlank())
+                        .map(n -> (Specification<Cliente>) (root, query, cb) ->
+                                cb.like(cb.lower(root.get("nombre")), "%" + n.trim().toLowerCase() + "%"))
+                        .orElse(null)
+        ).and(
+                Optional.ofNullable(apellidoPaterno)
+                        .filter(ap -> !ap.isBlank())
+                        .map(ap -> (Specification<Cliente>) (root, query, cb) ->
+                                cb.like(cb.lower(root.get("apellidoPaterno")), "%" + ap.trim().toLowerCase() + "%"))
+                        .orElse(null)
+        ).and(
+                Optional.ofNullable(apellidoMaterno)
+                        .filter(am -> !am.isBlank())
+                        .map(am -> (Specification<Cliente>) (root, query, cb) ->
+                                cb.like(cb.lower(root.get("apellidoMaterno")), "%" + am.trim().toLowerCase() + "%"))
+                        .orElse(null)
+        );
+
+        return clienteMapper.toResponseDTOPage(clienteRepository.findAll(spec, pageable));
     }
 
     @Override
-    public Cliente obtenerPorCurp(String curp) {
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDTO> buscarClientes(String nombre, String apellidoPaterno, String apellidoMaterno, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+        return buscarClientes(nombre, apellidoPaterno, apellidoMaterno, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO buscarCliente(Long id) {
+        return obtenerPorId(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO buscarCliente(String rfc, String curp) {
+        return obtenerPorRfcYCurp(rfc, curp);
+    }
+
+    // =========================================================================
+    // CONSULTAS ESPECÍFICAS
+    // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPorId(Long id) {
+        return clienteMapper.toResponseDTO(findClienteEntityById(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPorCurp(String curp) {
         return clienteRepository.findByCurp(curp)
+                .map(clienteMapper::toResponseDTO)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con CURP: " + curp));
     }
 
     @Override
-    public Cliente obtenerPorRfc(String rfc) {
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPorRfc(String rfc) {
         return clienteRepository.findByRfc(rfc)
+                .map(clienteMapper::toResponseDTO)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con RFC: " + rfc));
     }
 
     @Override
-    public List<Cliente> buscarPorNombre(String nombre) {
-        return clienteRepository.findByNombreContainingIgnoreCase(nombre);
+    @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPorRfcYCurp(String rfc, String curp) {
+        return clienteRepository.findByRfcAndCurp(rfc, curp)
+                .map(clienteMapper::toResponseDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con RFC: " + rfc + " y CURP: " + curp));
     }
 
-    @Override
-    public List<Cliente> buscarPorApellidoPaterno(String apellidoPaterno) {
-        return clienteRepository.findByApellidoPaternoContainingIgnoreCase(apellidoPaterno);
-    }
-
-    @Override
-    public List<Cliente> buscarPorApellidoMaterno(String apellidoMaterno) {
-        return clienteRepository.findByApellidoMaternoContainingIgnoreCase(apellidoMaterno);
-    }
+    // =========================================================================
+    // ACTUALIZACIÓN PARCIAL (No sobreescritura de campos con null, sin if excesivos)
+    // =========================================================================
 
     @Override
     @Transactional
-    public Cliente actualizarParcialmente(Long id, ClienteActualizaRequest request) {
-        Cliente cliente = obtenerPorId(id);
+    public ClienteResponseDTO actualizarParcialmente(Long id, ClienteActualizaRequest request) {
+        Cliente cliente = findClienteEntityById(id);
 
-        if (request.getNombre() != null) cliente.setNombre(request.getNombre());
-        if (request.getSegundoNombre() != null) cliente.setSegundoNombre(request.getSegundoNombre());
-        if (request.getApellidoPaterno() != null) cliente.setApellidoPaterno(request.getApellidoPaterno());
-        if (request.getApellidoMaterno() != null) cliente.setApellidoMaterno(request.getApellidoMaterno());
-        if (request.getFechaNacimiento() != null) {
-            if (Period.between(request.getFechaNacimiento(), LocalDate.now()).getYears() < 18) {
-                throw new BusinessValidationException("El cliente debe ser mayor de 18 años");
-            }
-            cliente.setFechaNacimiento(request.getFechaNacimiento());
-        }
-        if (request.getSexo() != null) cliente.setSexo(request.getSexo());
-        if (request.getNacionalidad() != null) cliente.setNacionalidad(request.getNacionalidad());
-        if (request.getEstadoCivil() != null) cliente.setEstadoCivil(request.getEstadoCivil());
-        if (request.getLadaMovil() != null) cliente.setLadaMovil(request.getLadaMovil());
-        if (request.getTelefonoMovil() != null) cliente.setTelefonoMovil(request.getTelefonoMovil());
-        if (request.getLadaAlternativo() != null) cliente.setLadaAlternativo(request.getLadaAlternativo());
-        if (request.getTelefonoAlternativo() != null) cliente.setTelefonoAlternativo(request.getTelefonoAlternativo());
-        if (request.getOcupacion() != null) cliente.setOcupacion(request.getOcupacion());
-        if (request.getEmpresa() != null) cliente.setEmpresa(request.getEmpresa());
-        if (request.getIngresoMensual() != null) cliente.setIngresoMensual(request.getIngresoMensual());
+        // Actualización declarativa y funcional evitando 20+ sentencias if imperativas
+        Optional.ofNullable(request.getNombre()).ifPresent(cliente::setNombre);
+        Optional.ofNullable(request.getSegundoNombre()).ifPresent(cliente::setSegundoNombre);
+        Optional.ofNullable(request.getApellidoPaterno()).ifPresent(cliente::setApellidoPaterno);
+        Optional.ofNullable(request.getApellidoMaterno()).ifPresent(cliente::setApellidoMaterno);
+        Optional.ofNullable(request.getFechaNacimiento()).ifPresent(fecha -> {
+            Optional.of(fecha)
+                    .filter(f -> Period.between(f, LocalDate.now()).getYears() >= 18)
+                    .orElseThrow(() -> new BusinessValidationException("El cliente debe ser mayor de 18 años"));
+            cliente.setFechaNacimiento(fecha);
+        });
+        Optional.ofNullable(request.getSexo()).ifPresent(cliente::setSexo);
+        Optional.ofNullable(request.getNacionalidad()).ifPresent(cliente::setNacionalidad);
+        Optional.ofNullable(request.getEstadoCivil()).ifPresent(cliente::setEstadoCivil);
+        Optional.ofNullable(request.getCorreoElectronico()).ifPresent(cliente::setCorreoElectronico);
+        Optional.ofNullable(request.getLadaMovil()).ifPresent(cliente::setLadaMovil);
+        Optional.ofNullable(request.getTelefonoMovil()).ifPresent(cliente::setTelefonoMovil);
+        Optional.ofNullable(request.getLadaAlternativo()).ifPresent(cliente::setLadaAlternativo);
+        Optional.ofNullable(request.getTelefonoAlternativo()).ifPresent(cliente::setTelefonoAlternativo);
+        Optional.ofNullable(request.getOcupacion()).ifPresent(cliente::setOcupacion);
+        Optional.ofNullable(request.getEmpresa()).ifPresent(cliente::setEmpresa);
+        Optional.ofNullable(request.getIngresoMensual()).ifPresent(cliente::setIngresoMensual);
 
-        // Actualizar Domicilio
-        Domicilio domicilio = cliente.getDomicilio();
-        if (domicilio != null) {
-            if (request.getCalle() != null) domicilio.setCalle(request.getCalle());
-            if (request.getNumeroExterior() != null) domicilio.setNumeroExterior(request.getNumeroExterior());
-            if (request.getNumeroInterior() != null) domicilio.setNumeroInterior(request.getNumeroInterior());
-            if (request.getColonia() != null) domicilio.setColonia(request.getColonia());
-            if (request.getMunicipio() != null) domicilio.setMunicipio(request.getMunicipio());
-            if (request.getEstado() != null) domicilio.setEstado(request.getEstado());
-            if (request.getCodigoPostal() != null) domicilio.setCodigoPostal(request.getCodigoPostal());
-            if (request.getPais() != null) domicilio.setPais(request.getPais());
-        }
-        
-        return clienteRepository.save(cliente);
+        // Actualización de Domicilio sin sobreescribir valores no enviados
+        Optional.ofNullable(cliente.getDomicilio()).ifPresent(domicilio -> {
+            Optional.ofNullable(request.getCalle()).ifPresent(domicilio::setCalle);
+            Optional.ofNullable(request.getNumeroExterior()).ifPresent(domicilio::setNumeroExterior);
+            Optional.ofNullable(request.getNumeroInterior()).ifPresent(domicilio::setNumeroInterior);
+            Optional.ofNullable(request.getColonia()).ifPresent(domicilio::setColonia);
+            Optional.ofNullable(request.getMunicipio()).ifPresent(domicilio::setMunicipio);
+            Optional.ofNullable(request.getEstado()).ifPresent(domicilio::setEstado);
+            Optional.ofNullable(request.getCodigoPostal()).ifPresent(domicilio::setCodigoPostal);
+            Optional.ofNullable(request.getPais()).ifPresent(domicilio::setPais);
+        });
+
+        Cliente clienteGuardado = clienteRepository.save(cliente);
+        return clienteMapper.toResponseDTO(clienteGuardado);
     }
 
     @Override
     @Transactional
     public void bajaLogica(Long id, TipoBaja tipoBaja) {
-        Cliente cliente = obtenerPorId(id);
+        Cliente cliente = findClienteEntityById(id);
         cliente.setActivo(false);
         cliente.setTipoBaja(tipoBaja);
         clienteRepository.save(cliente);
@@ -190,7 +250,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void bloquear(Long id) {
-        Cliente cliente = obtenerPorId(id);
+        Cliente cliente = findClienteEntityById(id);
         cliente.setBloqueado(true);
         clienteRepository.save(cliente);
     }
@@ -198,8 +258,23 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     @Transactional
     public void desbloquear(Long id) {
-        Cliente cliente = obtenerPorId(id);
+        Cliente cliente = findClienteEntityById(id);
         cliente.setBloqueado(false);
         clienteRepository.save(cliente);
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES PRIVADOS
+    // =========================================================================
+
+    private Cliente findClienteEntityById(Long id) {
+        return clienteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado con id: " + id));
+    }
+
+    private void validarUnicidad(boolean esValido, String mensajeError) {
+        if (!esValido) {
+            throw new DuplicateResourceException(mensajeError);
+        }
     }
 }
