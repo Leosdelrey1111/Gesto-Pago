@@ -19,7 +19,7 @@ public class Usuario {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id", nullable = false, unique = true)
+    @JoinColumn(name = "cliente_id", nullable = true, unique = true)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private Cliente cliente;
 
