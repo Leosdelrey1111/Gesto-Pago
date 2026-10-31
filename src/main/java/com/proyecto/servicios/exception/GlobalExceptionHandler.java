@@ -3,8 +3,16 @@ package com.proyecto.servicios.exception;
 import com.proyecto.servicios.model.response.GenericResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -67,8 +75,110 @@ public class GlobalExceptionHandler extends com.proyecto.servicios.controller.Va
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<GenericResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
-        log.warn("Cuerpo de solicitud ilegible: {}", ex.getMessage());
+        // No se registra el mensaje: Jackson puede incluir fragmentos del cuerpo (PIN, tokens, etc.).
+        log.warn("Cuerpo de solicitud ilegible: {}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud (JSON) es inválido o contiene tipos de datos incorrectos");
+    }
+
+    /**
+     * Falta un encabezado obligatorio (400).
+     */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<GenericResponse<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
+        log.warn("Encabezado obligatorio faltante: {}", ex.getHeaderName());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Encabezado obligatorio faltante",
+                Map.of(ex.getHeaderName(), "El encabezado es obligatorio"));
+    }
+
+    /**
+     * Metodo HTTP no permitido (405).
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<GenericResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        log.warn("Metodo HTTP no soportado: {}", ex.getMethod());
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "El metodo HTTP no esta permitido para este recurso");
+    }
+
+    /**
+     * Content-Type no soportado (415).
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<GenericResponse<Void>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        log.warn("Content-Type no soportado");
+        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "El tipo de contenido no es soportado; use application/json");
+    }
+
+    /**
+     * Ruta inexistente (404). Sin este handler la excepcion caeria en el 500 generico.
+     */
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<GenericResponse<Void>> handleNoResource(Exception ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "El recurso solicitado no existe");
+    }
+
+    /**
+     * Usuario autenticado sin permiso (403). Sin este handler el catch-all lo convertiria en 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GenericResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Acceso denegado por el framework de seguridad");
+        return buildResponse(HttpStatus.FORBIDDEN, "No tiene permisos para realizar esta operación");
+    }
+
+    /**
+     * Autenticacion fallida o ausente dentro del controlador (401).
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<GenericResponse<Void>> handleAuthentication(AuthenticationException ex) {
+        log.warn("Autenticacion fallida: {}", ex.getClass().getSimpleName());
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Credenciales inválidas o sesión no autenticada");
+    }
+
+    /**
+     * Operacion sobre un recurso al que el usuario no tiene derecho (403).
+     */
+    @ExceptionHandler(AccesoDenegadoException.class)
+    public ResponseEntity<GenericResponse<Void>> handleAccesoDenegado(AccesoDenegadoException ex) {
+        log.warn("Operacion denegada: {}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    /**
+     * Regla de negocio que impide ejecutar una solicitud valida: saldo, cuenta inactiva, monto (422).
+     */
+    @ExceptionHandler(OperacionNoProcesableException.class)
+    public ResponseEntity<GenericResponse<Void>> handleOperacionNoProcesable(OperacionNoProcesableException ex) {
+        log.warn("Operacion no procesable: {}", ex.getClass().getSimpleName());
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    }
+
+    /**
+     * GestoPago rechazo la operacion de forma concluyente (422). Solo se expone el codigo.
+     */
+    @ExceptionHandler(ProveedorRechazoException.class)
+    public ResponseEntity<GenericResponse<Void>> handleProveedorRechazo(ProveedorRechazoException ex) {
+        log.warn("Operacion rechazada por el proveedor. Codigo={}", ex.getCodigoProveedor());
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(),
+                Map.of("codigoProveedor", ex.getCodigoProveedor()));
+    }
+
+    /**
+     * El proveedor no recibio la solicitud; el saldo fue devuelto (503).
+     */
+    @ExceptionHandler(ProveedorNoDisponibleException.class)
+    public ResponseEntity<GenericResponse<Void>> handleProveedorNoDisponible(ProveedorNoDisponibleException ex) {
+        log.error("Proveedor no disponible: {}", ex.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "El proveedor de pagos no esta disponible. No se realizo ningun cargo; intente mas tarde.");
+    }
+
+    /**
+     * No se pudo obtener el bloqueo de la cuenta: hay otra operacion en curso (409).
+     */
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<GenericResponse<Void>> handleLockFailure(PessimisticLockingFailureException ex) {
+        log.warn("Bloqueo de cuenta no obtenido: {}", ex.getClass().getSimpleName());
+        return buildResponse(HttpStatus.CONFLICT, "Hay otra operacion en curso sobre la cuenta; intente nuevamente en unos segundos.");
     }
 
     /**

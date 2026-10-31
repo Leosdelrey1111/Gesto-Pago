@@ -10,4 +10,6 @@ public interface CatalogoProductoRepository extends MongoRepository<CatalogoProd
     long deleteByServicio(String servicio);
 
     Optional<CatalogoProducto> findFirstByIdServicio(String idServicio);
+
+    Optional<CatalogoProducto> findByIdProductoAndIdServicio(String idProducto, String idServicio);
 }

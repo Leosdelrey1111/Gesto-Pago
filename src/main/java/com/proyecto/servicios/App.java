@@ -22,6 +22,12 @@ import java.time.format.DateTimeFormatter;
 
 public class App implements CommandLineRunner {
 
+    static {
+        // HttpURLConnection reenvia silenciosamente un POST si la conexion se corta. En operaciones financieras
+        // eso puede duplicar un cargo: el reintento solo debe ocurrir de forma explicita (idempotente) en la app.
+        System.setProperty("sun.net.http.retryPost", "false");
+    }
+
     @Autowired
     private ApplicationContext context;
 

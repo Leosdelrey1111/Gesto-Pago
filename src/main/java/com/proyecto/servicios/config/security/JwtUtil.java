@@ -3,7 +3,9 @@ package com.proyecto.servicios.config.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -16,10 +18,15 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // Hardcoded secret key for development so tokens survive app restarts (must be at least 256 bits)
-    private final String SECRET_KEY = "VGhpcy1pcy1hLXZlcnktc2VjdXJlLWFuZC1sb25nLXNlY3JldC1rZXktZm9yLWp3dC1kZXZlbG9wbWVudA==";
-    
-    private final Key key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(io.jsonwebtoken.io.Decoders.BASE64.decode(SECRET_KEY));
+    private final Key key;
+
+    /**
+     * La clave de firma se inyecta desde la variable de entorno JWT_SECRET (Base64, minimo 256 bits).
+     * No tiene valor por defecto: sin ella la aplicacion no arranca.
+     */
+    public JwtUtil(@Value("${app.jwt.secret}") String secretBase64) {
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretBase64));
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

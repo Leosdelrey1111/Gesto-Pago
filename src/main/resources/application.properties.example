@@ -57,7 +57,7 @@ spring.flyway.baseline-version=0
 gestopago.auth.url=https://gestopago.portalventas.net
 gestopago.auth.id-distribuidor=<ID_DISTRIBUIDOR>
 gestopago.auth.codigo-dispositivo=<CODIGO_DISPOSITIVO>
-gestopago.auth.password=<CONTRASENA>
+gestopago.auth.password=${GESTOPAGO_AUTH_PASSWORD}
 gestopago.auth.refresh-rate-ms=3600000          # Cada cuántos ms se renueva el token
 
 # ----------------------------------------------------------------------
@@ -72,6 +72,31 @@ spring.cloud.openfeign.client.config.default.read-timeout=30000
 gestopago.catalogo.cron=0 0 6 * * *             # Cron diario 06:00
 gestopago.catalogo.startup-delay-ms=3000        # Espera antes de la carga inicial al arrancar
 
+# ----------------------------------------------------------------------
+# GestoPago - Cifrado y transacciones (sendTx.do)
+# Todos los secretos se leen de variables de entorno. Sin default: si faltan, la app no arranca.
+# ----------------------------------------------------------------------
+gestopago.crypto.secret-key=${GESTOPAGO_SECRET_KEY}
+gestopago.crypto.iv=${GESTOPAGO_IV}
+gestopago.tx.unidad=${GESTOPAGO_UNIDAD}
+gestopago.tx.api-key=${GESTOPAGO_API_KEY}
+gestopago.tx.monto-minimo=1.00
+gestopago.tx.monto-maximo=10000.00
+gestopago.tx.ventana-duplicado-segundos=60
+gestopago.tx.codigos-pendientes=
+gestopago.tx.conciliacion.habilitada=true
+gestopago.tx.conciliacion.espera-minutos=5
+gestopago.tx.conciliacion.max-intentos=5
+gestopago.tx.conciliacion.intervalo-ms=300000
+gestopago.tx.conciliacion.reenvio-mismo-upc=false
+spring.cloud.openfeign.client.config.gestoPagoTx.connect-timeout=3000
+spring.cloud.openfeign.client.config.gestoPagoTx.read-timeout=20000
+spring.cloud.openfeign.client.config.gestoPagoTx.logger-level=none
+
+# ----------------------------------------------------------------------
+# JWT de la API (Base64, minimo 256 bits)
+# ----------------------------------------------------------------------
+app.jwt.secret=${JWT_SECRET}
 # ----------------------------------------------------------------------
 # MongoDB (catálogo)
 # ----------------------------------------------------------------------
