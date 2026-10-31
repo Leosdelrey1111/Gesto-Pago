@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -29,10 +30,16 @@ import java.util.Map;
         basePackages = {
                 "com.proyecto.servicios.repositorys.sf",
                 "com.proyecto.servicios.repositorys.gestopago",
-                "com.proyecto.servicios.repository.onboarding"
+                "com.proyecto.servicios.repository.onboarding",
+                "com.proyecto.servicios.repository.transaccion"
         },
         transactionManagerRef = "sfTransactionManager",
         entityManagerFactoryRef = "sfEntityManagerFactory"
+)
+@EnableMongoRepositories(
+        basePackages = {
+                "com.proyecto.servicios.repositorys.gestopago"
+        }
 )
 public class ConfigDB {
     @Autowired
@@ -69,7 +76,8 @@ public class ConfigDB {
           em.setPackagesToScan(
                   "com.proyecto.servicios.entity.sf",
                   "com.proyecto.servicios.entity.gestopago",
-                  "com.proyecto.servicios.entity.onboarding"
+                  "com.proyecto.servicios.entity.onboarding",
+                  "com.proyecto.servicios.entity.transaccion"
           );
           em.setPersistenceUnitName("sfDatasource");
             HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
