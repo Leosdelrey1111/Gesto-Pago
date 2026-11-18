@@ -20,6 +20,7 @@ import com.proyecto.servicios.util.HuellaSolicitud;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -167,6 +168,37 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .estatus(tx.getEstatus())
                 .numAutorizacion(tx.getNumAutorizacion())
                 .fecha(tx.getFechaCreacion())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.proyecto.servicios.model.transaccion.TicketResponseDTO generarTicket(Long folioTransaccion, String correoAutenticado) {
+        Transaccion tx = transaccionRepository.findById(folioTransaccion)
+                .orElseThrow(() -> new com.proyecto.servicios.exception.ResourceNotFoundException("Transacción no encontrada con folio: " + folioTransaccion));
+
+        // Validar titularidad para evitar acceso a tickets ajenos (Anti-IDOR)
+        autorizacionValidator.autorizar(correoAutenticado, tx.getNumeroCuenta(), null);
+
+        if (tx.getEstatus() != EstatusTransaccion.EXITOSA) {
+            throw new com.proyecto.servicios.exception.OperacionNoProcesableException("Solo se pueden generar comprobantes de transacciones exitosas.");
+        }
+
+        return com.proyecto.servicios.model.transaccion.TicketResponseDTO.builder()
+                .titulo("COMPROBANTE OFICIAL DE PAGO")
+                .folio(tx.getId())
+                .upc(tx.getUpc())
+                .numeroAutorizacion(tx.getNumAutorizacion())
+                .idTransaccionProveedor(tx.getIdTxGestoPago())
+                .servicio(tx.getIdServicio())
+                .producto(tx.getNombreProducto())
+                .referenciaOTelefono(tx.getTelefono() != null ? tx.getTelefono() : tx.getReferencia())
+                .monto(tx.getMonto())
+                .numeroCuenta(tx.getNumeroCuenta())
+                .fechaOperacion(tx.getFechaCreacion())
+                .estatus("PAGADO / APROBADO")
+                .leyenda("Transacción procesada y liquidada a través de GestoPago. Conserve este comprobante.")
+                .emisor("GestoPagos Red Digital")
                 .build();
     }
 }

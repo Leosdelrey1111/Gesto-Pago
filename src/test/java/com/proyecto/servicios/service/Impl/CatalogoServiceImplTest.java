@@ -5,7 +5,7 @@ import com.proyecto.servicios.model.gestopago.catproduct.GestoPagoCatProductResp
 import com.proyecto.servicios.model.gestopago.catproduct.Producto;
 import com.proyecto.servicios.model.gestopago.catproduct.Productos;
 import com.proyecto.servicios.model.gestopago.catproduct.Mensaje;
-import com.proyecto.servicios.repositorys.gestopago.CatalogoProductoRepository;
+import com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

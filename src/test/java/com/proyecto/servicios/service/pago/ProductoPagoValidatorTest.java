@@ -7,7 +7,7 @@ import com.proyecto.servicios.exception.OperacionNoProcesableException;
 import com.proyecto.servicios.exception.ReglaNegocioException;
 import com.proyecto.servicios.exception.ResourceNotFoundException;
 import com.proyecto.servicios.model.transaccion.PagarServicioRequestDTO;
-import com.proyecto.servicios.repositorys.gestopago.CatalogoProductoRepository;
+import com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

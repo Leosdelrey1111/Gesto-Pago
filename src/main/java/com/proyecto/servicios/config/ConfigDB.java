@@ -28,8 +28,8 @@ import java.util.Map;
 @EnableTransactionManagement
 @EnableJpaRepositories(
         basePackages = {
-                "com.proyecto.servicios.repositorys.sf",
-                "com.proyecto.servicios.repositorys.gestopago",
+                "com.proyecto.servicios.repository.sf",
+                "com.proyecto.servicios.repository.gestopago",
                 "com.proyecto.servicios.repository.onboarding",
                 "com.proyecto.servicios.repository.transaccion"
         },
@@ -38,7 +38,7 @@ import java.util.Map;
 )
 @EnableMongoRepositories(
         basePackages = {
-                "com.proyecto.servicios.repositorys.gestopago"
+                "com.proyecto.servicios.repository.gestopago"
         }
 )
 public class ConfigDB {

@@ -25,17 +25,21 @@ public class PersonaController {
     private PersonaService personaService;
 
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PostMapping(value = "/personas",produces =MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> crearUser(@Valid @RequestBody PersonasRequest personasRequest){
 
         return new ResponseEntity<>(personaService.creaPersona(personasRequest), HttpStatus.OK);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PutMapping(value = "/personasActualiza", produces =MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> actualizUser(@Valid @RequestBody PersonasRequest personasRequest){
 
         return new ResponseEntity<>(personaService.actualizaPersona(personasRequest), HttpStatus.OK);
     }
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     @PutMapping(value = "/personasElimina", produces =MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GenericResponse> actualizUser(@Valid @RequestBody EliminaPersonaRequest personasRequest){
 

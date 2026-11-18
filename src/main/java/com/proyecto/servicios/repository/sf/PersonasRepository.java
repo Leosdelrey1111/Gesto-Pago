@@ -1,4 +1,4 @@
-package com.proyecto.servicios.repositorys.sf;
+package com.proyecto.servicios.repository.sf;
 
 import com.proyecto.servicios.entity.sf.Personas;
 import org.springframework.data.jpa.repository.JpaRepository;
