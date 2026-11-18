@@ -57,8 +57,19 @@ public class AutorizacionClienteValidator {
                 .filter(c -> c.getCliente() != null && cliente.getId().equals(c.getCliente().getId()))
                 .orElseThrow(() -> new AccesoDenegadoException(MSG_SIN_PERMISO));
 
-        if (passwordOPin != null && !passwordEncoder.matches(passwordOPin, usuario.getPassword())) {
-            throw new UnauthorizedAccessException("El password o PIN de autorizacion es incorrecto");
+        // Blindaje contra operaciones en cuentas bloqueadas o canceladas
+        if (cuenta.getEstatus() != com.proyecto.servicios.entity.onboarding.catalogos.EstatusCuenta.ACTIVA) {
+            throw new com.proyecto.servicios.exception.BusinessValidationException(
+                "La cuenta se encuentra " + cuenta.getEstatus() + " y no puede realizar transacciones financieras."
+            );
+        }
+
+        if (passwordOPin != null) {
+            boolean coincidePassword = passwordEncoder.matches(passwordOPin, usuario.getPassword());
+            boolean coincidePin = usuario.getPinTransaccional() != null && passwordEncoder.matches(passwordOPin, usuario.getPinTransaccional());
+            if (!coincidePassword && !coincidePin) {
+                throw new UnauthorizedAccessException("El password o PIN de autorizacion es incorrecto");
+            }
         }
         return cuenta;
     }

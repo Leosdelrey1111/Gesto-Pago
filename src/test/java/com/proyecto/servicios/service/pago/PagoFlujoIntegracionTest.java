@@ -22,7 +22,7 @@ import com.proyecto.servicios.model.transaccion.TransaccionResponseDTO;
 import com.proyecto.servicios.repository.onboarding.CuentaRepository;
 import com.proyecto.servicios.repository.onboarding.UsuarioRepository;
 import com.proyecto.servicios.repository.transaccion.TransaccionRepository;
-import com.proyecto.servicios.repositorys.gestopago.CatalogoProductoRepository;
+import com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository;
 import com.proyecto.servicios.service.Impl.TransaccionServiceImpl;
 import com.proyecto.servicios.util.GestoPagoCryptoUtil;
 import feign.Request;

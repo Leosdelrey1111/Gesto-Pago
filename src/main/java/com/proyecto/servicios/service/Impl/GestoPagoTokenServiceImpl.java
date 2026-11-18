@@ -4,7 +4,7 @@ import com.proyecto.servicios.client.GestoPagoAuthClient;
 import com.proyecto.servicios.entity.gestopago.GestoPagoToken;
 import com.proyecto.servicios.mapper.GestoPagoTokenMapper;
 import com.proyecto.servicios.model.gestopago.GestoPagoAuthResponse;
-import com.proyecto.servicios.repositorys.gestopago.GestoPagoTokenRepository;
+import com.proyecto.servicios.repository.gestopago.GestoPagoTokenRepository;
 import com.proyecto.servicios.service.GestoPagoTokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

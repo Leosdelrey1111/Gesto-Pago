@@ -137,7 +137,7 @@ public class GestoPagoCatProductServiceImpl implements GestoPagoCatProductServic
             log.warn("XML recibido de GestoPago que no pudo mapearse (truncado): {}", truncar(xml));
             throw new GestoPagoCatProductException("No fue posible interpretar el XML devuelto por GestoPago", ex);
         } catch (GestoPagoCatProductException ex) {
-            log.warn("XML recibido de GestoPago que no paso la validacion (truncado): {}", truncar(xml));
+                log.warn("XML recibido de GestoPago que no paso la validacion (truncado): {}", truncar(xml));
             throw ex;
         }
     }

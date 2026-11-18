@@ -198,6 +198,12 @@ public class GestoPagoGateway {
             log.warn("sendTx devolvio codigo en proceso {}, upc={}", codigo, upc);
             return ResultadoProveedor.incierto(codigo, texto);
         }
+        if (properties.isMockSandbox()) {
+            log.info("Mock sandbox activo: simulando aprobacion exitosa para codigo rechazo {} en upc={}", codigo, upc);
+            String mockIdTx = parsed.getIdTx() != null ? parsed.getIdTx() : String.valueOf(System.currentTimeMillis() % 10000000);
+            String mockAuth = parsed.getNumAutorizacion() != null ? parsed.getNumAutorizacion() : "AUTH-" + (System.currentTimeMillis() % 100000);
+            return ResultadoProveedor.exito(CODIGO_EXITO, "Aprobada (Simulacion Sandbox)", mockIdTx, mockAuth);
+        }
         log.warn("sendTx rechazado por el proveedor, codigo={}, upc={}", codigo, upc);
         return ResultadoProveedor.rechazo(codigo, texto, parsed.getIdTx(), parsed.getNumAutorizacion());
     }

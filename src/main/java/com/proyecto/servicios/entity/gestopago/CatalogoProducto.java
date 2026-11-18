@@ -22,4 +22,5 @@ public class CatalogoProducto {
     private String showAyuda;
     private String tipoReferencia;
     private String legend;
+    private String urlLogo;
 }

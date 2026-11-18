@@ -7,16 +7,14 @@ COPY build.gradle .
 COPY settings.gradle .
 COPY src src
 
-# Otorgar permisos de ejecución al wrapper y compilar el proyecto sin correr tests
 RUN chmod +x ./gradlew
-RUN ./gradlew build -x test
+RUN ./gradlew bootJar -x test && rm -f build/libs/*-plain.jar
 
 # Etapa de ejecución
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Puerto por defecto (Asegúrate que coincida con tu application.properties)
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -31,7 +31,7 @@ public class CuentaServiceImpl implements CuentaService {
         Cuenta cuenta = new Cuenta();
         cuenta.setCliente(cliente);
         cuenta.setNumeroCuenta(generarNumeroCuentaUnico());
-        cuenta.setSaldo(new BigDecimal("1000.00")); // Saldo inicial definido por el sistema
+        cuenta.setSaldo(BigDecimal.ZERO); // Toda cuenta nueva inicia en $0.00
         cuenta.setEstatus(EstatusCuenta.ACTIVA);
         
         return cuentaRepository.save(cuenta);

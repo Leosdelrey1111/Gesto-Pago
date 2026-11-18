@@ -7,7 +7,7 @@ import com.proyecto.servicios.exception.OperacionNoProcesableException;
 import com.proyecto.servicios.exception.ReglaNegocioException;
 import com.proyecto.servicios.exception.ResourceNotFoundException;
 import com.proyecto.servicios.model.transaccion.PagarServicioRequestDTO;
-import com.proyecto.servicios.repositorys.gestopago.CatalogoProductoRepository;
+import com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

@@ -47,6 +47,13 @@ public class GestoPagoTxProperties {
     /** Codigos de respuesta del proveedor que significan "en proceso" y no un rechazo definitivo. */
     private Set<String> codigosPendientes = new HashSet<>();
 
+    /**
+     * Modo simulacion sandbox: cuando es true, si la llamada real al proveedor es rechazada o falla por
+     * ser ambiente de pruebas / cuenta sin saldo de distribuidor / número de prueba no reconocido por la
+     * operadora (ej. Codigo 55), genera una aprobacion exitosa simulada para permitir flujo academico E2E.
+     */
+    private boolean mockSandbox = false;
+
     @Valid
     private Conciliacion conciliacion = new Conciliacion();
 

@@ -33,6 +33,32 @@ public class Usuario {
     @Builder.Default
     private Boolean activo = true;
 
+    @Column(name = "session_device_id", length = 100)
+    private String sessionDeviceId;
+
+    @Column(name = "session_id", length = 100)
+    private String sessionId;
+
+    @Column(name = "otp_code", length = 10)
+    private String otpCode;
+
+    @Column(name = "otp_expiracion")
+    private OffsetDateTime otpExpiracion;
+
+    @Column(name = "pin_transaccional", length = 255)
+    private String pinTransaccional;
+
+    @Column(name = "totp_secret", length = 64)
+    private String totpSecret;
+
+    @Column(name = "totp_activado")
+    @Builder.Default
+    private Boolean totpActivado = false;
+
+    @Column(name = "rol", length = 30)
+    @Builder.Default
+    private String rol = "CLIENTE";
+
     @CreationTimestamp
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private OffsetDateTime fechaCreacion;
