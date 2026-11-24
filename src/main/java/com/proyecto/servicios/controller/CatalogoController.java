@@ -55,6 +55,20 @@ public class CatalogoController {
             }
         } catch (Exception ignored) {
         }
+        
+        // Si el idServicio específico no existe en el CDN de GestoPago (ej. 3176), retornamos el logo genérico de servicio (79.png)
+        try {
+            String defaultUrl = "https://gestopago.portalventas.net/sistema/images/gestopago/servicios/79.png";
+            byte[] defaultBytes = restTemplate.getForObject(defaultUrl, byte[].class);
+            if (defaultBytes != null && defaultBytes.length > 0) {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.IMAGE_PNG);
+                headers.setCacheControl("public, max-age=86400");
+                return new ResponseEntity<>(defaultBytes, headers, HttpStatus.OK);
+            }
+        } catch (Exception ignored) {
+        }
+
         return ResponseEntity.notFound().build();
     }
 }

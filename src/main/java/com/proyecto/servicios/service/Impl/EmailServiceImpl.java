@@ -39,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void enviarCodigoOtp(String destinatario, String codigoOtp) {
         String asunto = "GestoPago Bank - Código de Seguridad 2FA";
-        String contenido =
+        String contenidoPlano =
                 "Estimado cliente,\n\n" +
                 "Su código de verificación para acceso seguro a GestoPago Bank es:\n\n" +
                 "   >>>  " + codigoOtp + "  <<<\n\n" +
@@ -49,25 +49,80 @@ public class EmailServiceImpl implements EmailService {
                 "Equipo de Seguridad Transaccional\n" +
                 "GestoPago Bank";
 
+        String contenidoHtml = construirHtmlOtp(codigoOtp);
+
         // Prioridad 1: Resend vía HTTPS REST (Puerto 443 - garantizado en Render/Cloud)
         if (resendApiKey != null && !resendApiKey.trim().isEmpty()) {
-            if (enviarConResend(destinatario, asunto, contenido)) {
+            if (enviarConResend(destinatario, asunto, contenidoPlano, contenidoHtml)) {
                 return;
             }
         }
 
         // Prioridad 2: Brevo (Sendinblue) vía HTTPS REST (Puerto 443)
         if (brevoApiKey != null && !brevoApiKey.trim().isEmpty()) {
-            if (enviarConBrevo(destinatario, asunto, contenido)) {
+            if (enviarConBrevo(destinatario, asunto, contenidoPlano, contenidoHtml)) {
                 return;
             }
         }
 
         // Prioridad 3: JavaMailSender convencional (SMTP 587 - local o VPS)
-        enviarConSmtp(destinatario, asunto, contenido);
+        enviarConSmtp(destinatario, asunto, contenidoPlano, contenidoHtml);
     }
 
-    private boolean enviarConResend(String destinatario, String asunto, String contenido) {
+    private String construirHtmlOtp(String codigoOtp) {
+        return """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Código de Verificación - GestoPago Bank</title>
+              <style>
+                body { margin: 0; padding: 0; background-color: #0B0F19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC; }
+                .wrapper { width: 100%; table-layout: fixed; background-color: #0B0F19; padding: 40px 0; }
+                .container { max-width: 520px; margin: 0 auto; background: linear-gradient(180deg, #131D31 0%, #0F172A 100%); border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+                .header { padding: 32px 32px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+                .logo-title { font-size: 20px; font-weight: 800; letter-spacing: 1.5px; color: #38BDF8; margin: 0; text-transform: uppercase; }
+                .subtitle { font-size: 11px; color: #94A3B8; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+                .content { padding: 36px 32px; text-align: center; }
+                .heading { font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0 0 12px; }
+                .paragraph { font-size: 13.5px; line-height: 1.6; color: #94A3B8; margin: 0 0 28px; }
+                .otp-box { background: rgba(56, 189, 248, 0.08); border: 2px dashed #0284C7; border-radius: 14px; padding: 18px 24px; margin: 0 auto 28px; display: inline-block; }
+                .otp-code { font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 36px; font-weight: 800; letter-spacing: 12px; color: #38BDF8; margin-left: 12px; }
+                .warning-box { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 12px 16px; border-radius: 8px; text-align: left; margin-bottom: 24px; }
+                .warning-text { font-size: 12px; color: #FCD34D; margin: 0; line-height: 1.5; }
+                .footer { padding: 24px 32px; background-color: #0A0E1A; text-align: center; border-top: 1px solid rgba(255,255,255,0.04); }
+                .footer-text { font-size: 11px; color: #64748B; margin: 0; line-height: 1.6; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="container">
+                  <div class="header">
+                    <h1 class="logo-title">🏦 GESTOPAGO BANK</h1>
+                    <div class="subtitle">Portal Transaccional Corporativo • Cifrado AES-256</div>
+                  </div>
+                  <div class="content">
+                    <h2 class="heading">Código de Seguridad 2FA</h2>
+                    <p class="paragraph">Utiliza el siguiente código único de verificación para autenticar tu acceso al portal bancario:</p>
+                    <div class="otp-box">
+                      <div class="otp-code">""" + codigoOtp + """</div>
+                    </div>
+                    <div class="warning-box">
+                      <p class="warning-text">⚠️ <strong>Seguridad Bancaria:</strong> Este código expira en <strong>3 minutos</strong> y es de un solo uso. Nuestro personal jamás te solicitará este código por teléfono o mensaje.</p>
+                    </div>
+                  </div>
+                  <div class="footer">
+                    <p class="footer-text">Este es un mensaje automático de seguridad. Si no intentaste iniciar sesión, cambia tu contraseña de inmediato.<br>© 2026 GestoPago Bank Inc. Todos los derechos reservados.</p>
+                  </div>
+                </div>
+              </div>
+            </body>
+            </html>
+            """;
+    }
+
+    private boolean enviarConResend(String destinatario, String asunto, String contenidoPlano, String contenidoHtml) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -81,7 +136,8 @@ public class EmailServiceImpl implements EmailService {
             body.put("from", sender);
             body.put("to", Collections.singletonList(destinatario));
             body.put("subject", asunto);
-            body.put("text", contenido);
+            body.put("text", contenidoPlano);
+            body.put("html", contenidoHtml);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity("https://api.resend.com/emails", request, String.class);
@@ -93,7 +149,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    private boolean enviarConBrevo(String destinatario, String asunto, String contenido) {
+    private boolean enviarConBrevo(String destinatario, String asunto, String contenidoPlano, String contenidoHtml) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -105,7 +161,8 @@ public class EmailServiceImpl implements EmailService {
             body.put("sender", Map.of("name", "GestoPago Bank", "email", senderEmail));
             body.put("to", List.of(Map.of("email", destinatario)));
             body.put("subject", asunto);
-            body.put("textContent", contenido);
+            body.put("textContent", contenidoPlano);
+            body.put("htmlContent", contenidoHtml);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", request, String.class);
@@ -117,21 +174,23 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
-    private void enviarConSmtp(String destinatario, String asunto, String contenido) {
+    private void enviarConSmtp(String destinatario, String asunto, String contenidoPlano, String contenidoHtml) {
         try {
-            SimpleMailMessage mensaje = new SimpleMailMessage();
+            jakarta.mail.internet.MimeMessage mimeMessage = mailSender.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper = 
+                    new org.springframework.mail.javamail.MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
             if (remitente != null && !remitente.trim().isEmpty()) {
-                mensaje.setFrom(remitente);
+                helper.setFrom(remitente, "GestoPago Bank");
             }
-            mensaje.setTo(destinatario);
-            mensaje.setSubject(asunto);
-            mensaje.setText(contenido);
+            helper.setTo(destinatario);
+            helper.setSubject(asunto);
+            helper.setText(contenidoPlano, contenidoHtml);
 
-            mailSender.send(mensaje);
+            mailSender.send(mimeMessage);
             log.info("[EMAIL 2FA] Código OTP enviado exitosamente a {} vía SMTP convencional", destinatario);
         } catch (Exception e) {
-            log.error("[EMAIL 2FA SMTP ERROR] Error enviando a {} vía SMTP (Nota: En Render Free, los puertos SMTP 25/465/587 son bloqueados. Configure RESEND_API_KEY en variables de entorno de Render): {}",
-                    destinatario, e.getMessage());
+            log.error("[EMAIL 2FA SMTP ERROR] Error enviando a {} vía SMTP: {}", destinatario, e.getMessage());
         }
     }
 }
