@@ -266,13 +266,24 @@ public class AuthController {
         cliente.setCurp(curpUpper);
         cliente.setRfc(rfcUpper);
         cliente.setFechaNacimiento(req.getFechaNacimiento());
-        cliente.setCodigoPostal(req.getCodigoPostal());
         cliente.setSexo(com.proyecto.servicios.entity.onboarding.catalogos.Sexo.MASCULINO);
         cliente.setNacionalidad(com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad.MEXICANA);
         cliente.setEstadoCivil(com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.SOLTERO);
         cliente.setOcupacion("Titular de Cuenta Digital");
         cliente.setEmpresa("Independiente");
         cliente.setIngresoMensual(new java.math.BigDecimal("15000.00"));
+
+        // Domicilio fiscal asociado
+        com.proyecto.servicios.entity.onboarding.Domicilio dom = new com.proyecto.servicios.entity.onboarding.Domicilio();
+        dom.setCliente(cliente);
+        dom.setCalle("Domicilio Registrado en Plataforma");
+        dom.setNumeroExterior("S/N");
+        dom.setColonia("Centro");
+        dom.setMunicipio("Ciudad de México");
+        dom.setEstado(com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico.CIUDAD_DE_MEXICO);
+        dom.setCodigoPostal(req.getCodigoPostal());
+        dom.setPais(com.proyecto.servicios.entity.onboarding.catalogos.Pais.MEXICO);
+        cliente.setDomicilio(dom);
 
         com.proyecto.servicios.service.CuentaService cuentaService = 
                 org.springframework.web.context.support.WebApplicationContextUtils
