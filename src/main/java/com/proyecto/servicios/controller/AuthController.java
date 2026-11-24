@@ -210,6 +210,81 @@ public class AuthController {
         ));
     }
 
+    @PostMapping("/pin/solicitar-otp")
+    public ResponseEntity<?> solicitarOtpParaPin(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedAccessException("Sesión no autenticada");
+        }
+        Usuario usuario = usuarioRepository.findByCorreo(authentication.getName())
+                .orElseThrow(() -> new UnauthorizedAccessException("Usuario no encontrado"));
+
+        authService.solicitarOtp(usuario);
+
+        String correo = usuario.getCorreo();
+        int atIdx = correo != null ? correo.indexOf('@') : -1;
+        String correoEnmascarado = (correo != null && atIdx > 2)
+                ? correo.substring(0, 2) + "•••••" + correo.substring(atIdx)
+                : (correo != null ? "•••••" + correo.substring(Math.max(0, atIdx)) : "•••••");
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "mensaje", "Código de seguridad 2FA enviado a su correo " + correoEnmascarado,
+                "correoEnmascarado", correoEnmascarado,
+                "status", 200
+        ));
+    }
+
+    @PostMapping("/pin/cambiar-con-seguridad")
+    public ResponseEntity<?> cambiarPinConSeguridad(
+            @RequestBody java.util.Map<String, String> body,
+            org.springframework.security.core.Authentication authentication) {
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new UnauthorizedAccessException("Sesión no autenticada");
+        }
+
+        String password = body.get("password");
+        String otp = body.get("otp");
+        String nuevoPin = body.get("nuevoPin");
+
+        if (password == null || password.isBlank()) {
+            throw new UnauthorizedAccessException("La contraseña de acceso es requerida");
+        }
+        if (otp == null || otp.isBlank()) {
+            throw new UnauthorizedAccessException("El código 2FA es requerido");
+        }
+        if (nuevoPin == null || !nuevoPin.matches("^\\d{4}$")) {
+            throw new UnauthorizedAccessException("El nuevo NIP debe tener exactamente 4 dígitos numéricos");
+        }
+
+        Usuario usuario = usuarioRepository.findByCorreo(authentication.getName())
+                .orElseThrow(() -> new UnauthorizedAccessException("Usuario no encontrado"));
+
+        // Validar contraseña
+        org.springframework.security.crypto.password.PasswordEncoder encoder = 
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        if (!encoder.matches(password.trim(), usuario.getPassword())) {
+            throw new UnauthorizedAccessException("Contraseña de acceso incorrecta");
+        }
+
+        // Validar OTP
+        boolean esValidoOtp = authService.validarOtp(usuario, otp.trim());
+        boolean esValidoTotp = usuario.getTotpSecret() != null && 
+                com.proyecto.servicios.util.GoogleAuthenticatorUtil.validarCodigo(usuario.getTotpSecret(), otp.trim());
+
+        if (!esValidoOtp && !esValidoTotp) {
+            throw new UnauthorizedAccessException("Código de seguridad 2FA incorrecto o expirado");
+        }
+
+        // Actualizar PIN con BCrypt
+        usuario.setPinTransaccional(encoder.encode(nuevoPin.trim()));
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "mensaje", "NIP de tarjeta actualizado exitosamente",
+                "status", 200
+        ));
+    }
+
     @PostMapping("/pin")
     public ResponseEntity<?> actualizarPin(
             @Valid @RequestBody com.proyecto.servicios.model.security.ActualizarPinRequest request,
@@ -319,13 +394,22 @@ public class AuthController {
         org.springframework.security.crypto.password.PasswordEncoder encoder = 
                 new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
 
+        // Asignar NIP inicial por detrás de 4 dígitos (derivado de los últimos 4 del teléfono)
+        String nipInicial = "1234";
+        try {
+            String tel = req.getTelefono().trim();
+            if (tel.length() >= 4) {
+                nipInicial = tel.substring(tel.length() - 4);
+            }
+        } catch (Exception ignored) {}
+
         Usuario usuario = Usuario.builder()
                 .correo(req.getCorreo().trim().toLowerCase())
                 .password(encoder.encode(req.getPassword()))
                 .cliente(clienteGuardado)
                 .activo(true)
                 .rol("CLIENTE")
-                .pinTransaccional(null)
+                .pinTransaccional(encoder.encode(nipInicial))
                 .build();
 
         usuarioRepository.save(usuario);
