@@ -106,7 +106,7 @@ public class EmailServiceImpl implements EmailService {
                     <h2 class="heading">Codigo de Seguridad 2FA</h2>
                     <p class="paragraph">Utiliza el siguiente codigo unico de verificacion para autenticar tu acceso al portal bancario:</p>
                     <div class="otp-box">
-                      <div class="otp-code">%s</div>
+                      <div class="otp-code">{{CODIGO_OTP}}</div>
                     </div>
                     <div class="warning-box">
                       <p class="warning-text"><strong>Seguridad Bancaria:</strong> Este codigo expira en <strong>3 minutos</strong> y es de un solo uso. Nuestro personal jamas te solicitara este codigo por telefono o mensaje.</p>
@@ -120,7 +120,7 @@ public class EmailServiceImpl implements EmailService {
             </body>
             </html>
             """;
-        return String.format(plantilla, codigoOtp);
+        return plantilla.replace("{{CODIGO_OTP}}", codigoOtp);
     }
 
     private boolean enviarConResend(String destinatario, String asunto, String contenidoPlano, String contenidoHtml) {
