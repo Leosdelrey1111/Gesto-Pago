@@ -42,7 +42,7 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/", "/auth/login", "/auth/registro", "/auth/oauth/token", "/auth/2fa/validar", "/auth/2fa/reenviar-otp", "/gestopago/logo/**", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+                .requestMatchers("/", "/auth/login", "/auth/registro", "/auth/oauth/token", "/auth/2fa/validar", "/auth/2fa/reenviar-otp", "/gestopago/logo/**", "//gestopago/logo/**", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/clientes", "/clientes/").permitAll()
                 .anyRequest().authenticated()
             )
