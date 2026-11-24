@@ -161,7 +161,7 @@ public class PagoLedgerService {
         }
 
         // Como el saldo nunca se tocó previamente, no se requiere revertir ni modificar la cuenta.
-        Cuenta cuenta = cuentaRepository.findById(tx.getNumeroCuenta()).orElse(null);
+        Cuenta cuenta = cuentaRepository.findByNumeroCuenta(tx.getNumeroCuenta()).orElse(null);
         if (cuenta != null) {
             tx.setSaldoAnterior(cuenta.getSaldo());
             tx.setSaldoNuevo(cuenta.getSaldo());
