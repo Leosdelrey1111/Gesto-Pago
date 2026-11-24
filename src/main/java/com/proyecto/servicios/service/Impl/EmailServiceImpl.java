@@ -29,10 +29,10 @@ public class EmailServiceImpl implements EmailService {
     @Value("${spring.mail.username:}")
     private String remitente;
 
-    @Value("${RESEND_API_KEY:}")
+    @Value("${app.email.resend-api-key:${RESEND_API_KEY:}}")
     private String resendApiKey;
 
-    @Value("${BREVO_API_KEY:}")
+    @Value("${app.email.brevo-api-key:${BREVO_API_KEY:}}")
     private String brevoApiKey;
 
     @Async
