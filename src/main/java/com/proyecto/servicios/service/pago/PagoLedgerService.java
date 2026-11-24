@@ -89,15 +89,12 @@ public class PagoLedgerService {
         if (cuenta.getEstatus() != EstatusCuenta.ACTIVA) {
             throw new CuentaInactivaException();
         }
-        BigDecimal saldoAnterior = cuenta.getSaldo();
-        if (saldoAnterior.compareTo(plan.monto()) < 0) {
+        BigDecimal saldoActual = cuenta.getSaldo();
+        if (saldoActual.compareTo(plan.monto()) < 0) {
             throw new SaldoInsuficienteException();
         }
 
-        BigDecimal saldoNuevo = saldoAnterior.subtract(plan.monto());
-        cuenta.setSaldo(saldoNuevo);
-        cuentaRepository.save(cuenta);
-
+        // El saldo NO se descuenta aquí; permanece intacto hasta que el proveedor confirme éxito.
         Transaccion tx = transaccionRepository.save(Transaccion.builder()
                 .numeroCuenta(cuenta.getNumeroCuenta())
                 .upc(upc)
@@ -109,49 +106,70 @@ public class PagoLedgerService {
                 .telefono(plan.telefono())
                 .referencia(plan.referencia())
                 .monto(plan.monto())
-                .saldoAnterior(saldoAnterior)
-                .saldoNuevo(saldoNuevo)
+                .saldoAnterior(saldoActual)
+                .saldoNuevo(saldoActual)
                 .payloadEnviado(payload)
                 .estatus(EstatusTransaccion.PENDIENTE)
                 .build());
-        log.info("Saldo reservado: tx={}, upc={}", tx.getId(), tx.getUpc());
+        log.info("Operación registrada en estado PENDIENTE: tx={}, upc={}", tx.getId(), tx.getUpc());
         return new Reserva(tx, true);
     }
 
-    /** El proveedor confirmo. El saldo ya estaba descontado: solo se registra el resultado. */
+    /**
+     * El proveedor confirmó éxito (01). Aquí es donde formalmente se descuenta el saldo de la cuenta.
+     */
     @Transactional
     public Transaccion confirmar(Long idTransaccion, ResultadoProveedor resultado) {
         Transaccion tx = bloquear(idTransaccion);
         if (tx.getEstatus().esFinal()) {
             return tx;
         }
+
+        Cuenta cuenta = cuentaRepository.findByNumeroCuentaForUpdate(tx.getNumeroCuenta())
+                .orElseThrow(() -> new ResourceNotFoundException("Cuenta de la transacción no encontrada"));
+
+        BigDecimal saldoAnterior = cuenta.getSaldo();
+        if (saldoAnterior.compareTo(tx.getMonto()) < 0) {
+            throw new SaldoInsuficienteException();
+        }
+
+        BigDecimal nuevoSaldo = saldoAnterior.subtract(tx.getMonto());
+        cuenta.setSaldo(nuevoSaldo);
+        cuentaRepository.save(cuenta);
+
+        tx.setSaldoAnterior(saldoAnterior);
+        tx.setSaldoNuevo(nuevoSaldo);
         tx.setEstatus(EstatusTransaccion.EXITOSA);
         registrarRespuesta(tx, resultado);
-        log.info("Transaccion confirmada: tx={}, upc={}", tx.getId(), tx.getUpc());
+        log.info("Transacción aprobada y saldo debitado exitosamente: tx={}, upc={}, nuevoSaldo={}",
+                tx.getId(), tx.getUpc(), nuevoSaldo);
         return transaccionRepository.save(tx);
     }
 
     /**
-     * El proveedor NO proceso la operacion: se devuelve el monto y se cierra la transaccion.
-     * Es idempotente: una transaccion ya cerrada no vuelve a acreditarse.
+     * El proveedor NO procesó la operación o la rechazó: NO se descuenta saldo.
+     * La transacción simplemente se cierra con su estatus de rechazo/falla.
      */
     @Transactional
     public Transaccion devolver(Long idTransaccion, EstatusTransaccion estatusFinal, ResultadoProveedor resultado) {
         if (estatusFinal != EstatusTransaccion.RECHAZADA && estatusFinal != EstatusTransaccion.FALLIDA) {
-            throw new IllegalArgumentException("Estatus final invalido para una devolucion: " + estatusFinal);
+            throw new IllegalArgumentException("Estatus final inválido para un rechazo: " + estatusFinal);
         }
         Transaccion tx = bloquear(idTransaccion);
         if (tx.getEstatus().esFinal()) {
             return tx;
         }
-        Cuenta cuenta = cuentaRepository.findByNumeroCuentaForUpdate(tx.getNumeroCuenta())
-                .orElseThrow(() -> new ResourceNotFoundException("Cuenta de la transaccion no encontrada"));
-        cuenta.setSaldo(cuenta.getSaldo().add(tx.getMonto()));
-        cuentaRepository.save(cuenta);
+
+        // Como el saldo nunca se tocó previamente, no se requiere revertir ni modificar la cuenta.
+        Cuenta cuenta = cuentaRepository.findById(tx.getNumeroCuenta()).orElse(null);
+        if (cuenta != null) {
+            tx.setSaldoAnterior(cuenta.getSaldo());
+            tx.setSaldoNuevo(cuenta.getSaldo());
+        }
 
         tx.setEstatus(estatusFinal);
         registrarRespuesta(tx, resultado);
-        log.info("Saldo devuelto: tx={}, upc={}, estatus={}", tx.getId(), tx.getUpc(), estatusFinal);
+        log.info("Operación cerrada sin cobro: tx={}, upc={}, estatus={}", tx.getId(), tx.getUpc(), estatusFinal);
         return transaccionRepository.save(tx);
     }
 
