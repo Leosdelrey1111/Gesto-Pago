@@ -70,17 +70,17 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private String construirHtmlOtp(String codigoOtp) {
-        return """
+        String plantilla = """
             <!DOCTYPE html>
             <html lang="es">
             <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Código de Verificación - GestoPago Bank</title>
+              <title>Codigo de Verificacion - GestoPago Bank</title>
               <style>
                 body { margin: 0; padding: 0; background-color: #0B0F19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC; }
                 .wrapper { width: 100%; table-layout: fixed; background-color: #0B0F19; padding: 40px 0; }
-                .container { max-width: 520px; margin: 0 auto; background: linear-gradient(180deg, #131D31 0%, #0F172A 100%); border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+                .container { max-width: 520px; margin: 0 auto; background: #0F172A; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
                 .header { padding: 32px 32px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
                 .logo-title { font-size: 20px; font-weight: 800; letter-spacing: 1.5px; color: #38BDF8; margin: 0; text-transform: uppercase; }
                 .subtitle { font-size: 11px; color: #94A3B8; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
@@ -99,27 +99,28 @@ public class EmailServiceImpl implements EmailService {
               <div class="wrapper">
                 <div class="container">
                   <div class="header">
-                    <h1 class="logo-title">🏦 GESTOPAGO BANK</h1>
-                    <div class="subtitle">Portal Transaccional Corporativo • Cifrado AES-256</div>
+                    <h1 class="logo-title">GESTOPAGO BANK</h1>
+                    <div class="subtitle">Portal Transaccional Corporativo - Cifrado AES-256</div>
                   </div>
                   <div class="content">
-                    <h2 class="heading">Código de Seguridad 2FA</h2>
-                    <p class="paragraph">Utiliza el siguiente código único de verificación para autenticar tu acceso al portal bancario:</p>
+                    <h2 class="heading">Codigo de Seguridad 2FA</h2>
+                    <p class="paragraph">Utiliza el siguiente codigo unico de verificacion para autenticar tu acceso al portal bancario:</p>
                     <div class="otp-box">
-                      <div class="otp-code">""" + codigoOtp + """</div>
+                      <div class="otp-code">%s</div>
                     </div>
                     <div class="warning-box">
-                      <p class="warning-text">⚠️ <strong>Seguridad Bancaria:</strong> Este código expira en <strong>3 minutos</strong> y es de un solo uso. Nuestro personal jamás te solicitará este código por teléfono o mensaje.</p>
+                      <p class="warning-text"><strong>Seguridad Bancaria:</strong> Este codigo expira en <strong>3 minutos</strong> y es de un solo uso. Nuestro personal jamas te solicitara este codigo por telefono o mensaje.</p>
                     </div>
                   </div>
                   <div class="footer">
-                    <p class="footer-text">Este es un mensaje automático de seguridad. Si no intentaste iniciar sesión, cambia tu contraseña de inmediato.<br>© 2026 GestoPago Bank Inc. Todos los derechos reservados.</p>
+                    <p class="footer-text">Este es un mensaje automatico de seguridad. Si no intentaste iniciar sesion, cambia tu contrasena de inmediato.<br>&copy; 2026 GestoPago Bank Inc. Todos los derechos reservados.</p>
                   </div>
                 </div>
               </div>
             </body>
             </html>
             """;
+        return String.format(plantilla, codigoOtp);
     }
 
     private boolean enviarConResend(String destinatario, String asunto, String contenidoPlano, String contenidoHtml) {
