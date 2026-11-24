@@ -42,7 +42,7 @@ public class CatalogoController {
      * Endpoint proxy para servir las imágenes oficiales de GestoPago evitando bloqueos de CORS
      * en clientes Web (Flutter Web Canvas / HTML renderer).
      */
-    @GetMapping(value = "/gestopago/logo/{idServicio}", produces = MediaType.IMAGE_PNG_VALUE)
+    @GetMapping(value = {"/gestopago/logo/{idServicio}", "//gestopago/logo/{idServicio}"}, produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> obtenerLogoServicio(@PathVariable String idServicio) {
         try {
             String url = "https://gestopago.portalventas.net/sistema/images/gestopago/servicios/" + idServicio + ".png";
