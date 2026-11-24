@@ -156,7 +156,7 @@ public class EmailServiceImpl implements EmailService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("api-key", brevoApiKey.trim());
 
-            String senderEmail = (remitente != null && !remitente.trim().isEmpty()) ? remitente.trim() : "soporte@gestopago.com";
+            String senderEmail = (remitente != null && !remitente.trim().isEmpty()) ? remitente.trim() : "bhleonel705@gmail.com";
 
             Map<String, Object> body = new HashMap<>();
             body.put("sender", Map.of("name", "GestoPago Bank", "email", senderEmail));
@@ -169,8 +169,11 @@ public class EmailServiceImpl implements EmailService {
             restTemplate.postForEntity("https://api.brevo.com/v3/smtp/email", request, String.class);
             log.info("[EMAIL 2FA] Código OTP enviado exitosamente a {} vía Brevo HTTPS API", destinatario);
             return true;
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            log.warn("[EMAIL 2FA BREVO ERROR] Rechazado por Brevo HTTP {}: {}. Intentando fallback...", e.getStatusCode(), e.getResponseBodyAsString());
+            return false;
         } catch (Exception e) {
-            log.warn("[EMAIL 2FA BREVO ERROR] No se pudo enviar vía Brevo: {}. Intentando fallback...", e.getMessage());
+            log.warn("[EMAIL 2FA BREVO ERROR] Error inesperado vía Brevo: {}. Intentando fallback...", e.getMessage());
             return false;
         }
     }
