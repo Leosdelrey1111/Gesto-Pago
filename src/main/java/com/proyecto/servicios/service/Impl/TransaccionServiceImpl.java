@@ -180,24 +180,42 @@ public class TransaccionServiceImpl implements TransaccionService {
         // Validar titularidad para evitar acceso a tickets ajenos (Anti-IDOR)
         autorizacionValidator.autorizar(correoAutenticado, tx.getNumeroCuenta(), null);
 
-        if (tx.getEstatus() != EstatusTransaccion.EXITOSA) {
-            throw new com.proyecto.servicios.exception.OperacionNoProcesableException("Solo se pueden generar comprobantes de transacciones exitosas.");
-        }
+        String tituloComprobante = switch (tx.getEstatus()) {
+            case EXITOSA -> "COMPROBANTE OFICIAL DE PAGO";
+            case RECHAZADA -> "COMPROBANTE DE PAGO RECHAZADO";
+            case FALLIDA -> "COMPROBANTE DE OPERACIÓN FALLIDA";
+            case PENDIENTE_CONCILIACION, PENDIENTE -> "COMPROBANTE DE PAGO EN PROCESO";
+        };
+
+        String leyendaComprobante = switch (tx.getEstatus()) {
+            case EXITOSA -> "Transacción procesada y liquidada a través de GestoPago. Conserve este comprobante.";
+            case RECHAZADA -> "La operación fue rechazada por el proveedor. No se aplicó ningún cargo a su cuenta.";
+            case FALLIDA -> "No fue posible conectar con el proveedor. Su saldo no fue debitado.";
+            case PENDIENTE_CONCILIACION, PENDIENTE -> "La transacción se encuentra en validación.";
+        };
+
+        String estatusTexto = switch (tx.getEstatus()) {
+            case EXITOSA -> "PAGADO / APROBADO";
+            case RECHAZADA -> "RECHAZADA";
+            case FALLIDA -> "FALLIDA";
+            case PENDIENTE_CONCILIACION -> "EN CONCILIACIÓN";
+            case PENDIENTE -> "PENDIENTE";
+        };
 
         return com.proyecto.servicios.model.transaccion.TicketResponseDTO.builder()
-                .titulo("COMPROBANTE OFICIAL DE PAGO")
+                .titulo(tituloComprobante)
                 .folio(tx.getId())
                 .upc(tx.getUpc())
-                .numeroAutorizacion(tx.getNumAutorizacion())
-                .idTransaccionProveedor(tx.getIdTxGestoPago())
+                .numeroAutorizacion(tx.getNumAutorizacion() != null ? tx.getNumAutorizacion() : "N/A")
+                .idTransaccionProveedor(tx.getIdTxGestoPago() != null ? tx.getIdTxGestoPago() : "N/A")
                 .servicio(tx.getIdServicio())
                 .producto(tx.getNombreProducto())
                 .referenciaOTelefono(tx.getTelefono() != null ? tx.getTelefono() : tx.getReferencia())
                 .monto(tx.getMonto())
                 .numeroCuenta(tx.getNumeroCuenta())
                 .fechaOperacion(tx.getFechaCreacion())
-                .estatus("PAGADO / APROBADO")
-                .leyenda("Transacción procesada y liquidada a través de GestoPago. Conserve este comprobante.")
+                .estatus(estatusTexto)
+                .leyenda(leyendaComprobante)
                 .emisor("GestoPagos Red Digital")
                 .build();
     }
