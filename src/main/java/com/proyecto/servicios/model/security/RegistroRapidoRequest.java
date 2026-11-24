@@ -6,17 +6,40 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegistroRapidoRequest {
 
-    @NotBlank(message = "El nombre completo es obligatorio")
+    @NotBlank(message = "El primer nombre es obligatorio")
+    @Size(min = 2, max = 50, message = "El nombre debe tener entre 2 y 50 caracteres")
     private String nombre;
 
+    @Size(max = 50, message = "El segundo nombre no puede exceder 50 caracteres")
+    private String segundoNombre;
+
     @NotBlank(message = "El apellido paterno es obligatorio")
+    @Size(min = 2, max = 50, message = "El apellido paterno debe tener entre 2 y 50 caracteres")
     private String apellidoPaterno;
+
+    @NotBlank(message = "El apellido materno es obligatorio")
+    @Size(min = 2, max = 50, message = "El apellido materno debe tener entre 2 y 50 caracteres")
+    private String apellidoMaterno;
+
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
+    @Past(message = "La fecha de nacimiento no puede ser futura")
+    private LocalDate fechaNacimiento;
+
+    @NotBlank(message = "La CURP es obligatoria")
+    @Size(min = 18, max = 18, message = "La CURP debe contener exactamente 18 caracteres")
+    private String curp;
+
+    @NotBlank(message = "El RFC es obligatorio")
+    @Size(min = 12, max = 13, message = "El RFC debe contener 12 o 13 caracteres")
+    private String rfc;
 
     @NotBlank(message = "El correo electrónico es obligatorio")
     @Email(message = "Formato de correo electrónico no válido")
@@ -25,6 +48,11 @@ public class RegistroRapidoRequest {
     @NotBlank(message = "El teléfono móvil es obligatorio")
     @Pattern(regexp = "^\\d{10}$", message = "El teléfono debe contener exactamente 10 dígitos")
     private String telefono;
+
+    @NotNull(message = "El código postal es obligatorio")
+    @Min(value = 1000, message = "El código postal debe ser válido")
+    @Max(value = 99999, message = "El código postal no puede exceder 5 dígitos")
+    private Integer codigoPostal;
 
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 8, max = 12, message = "La contraseña debe tener entre 8 y 12 caracteres")

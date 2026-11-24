@@ -235,25 +235,6 @@ public class AuthController {
             throw new com.proyecto.servicios.exception.UnauthorizedAccessException("El correo electrónico ya se encuentra registrado");
         }
 
-        // Crear Cliente bancario básico
-        com.proyecto.servicios.entity.onboarding.Cliente cliente = new com.proyecto.servicios.entity.onboarding.Cliente();
-        cliente.setNombre(req.getNombre().trim());
-        cliente.setApellidoPaterno(req.getApellidoPaterno().trim());
-        cliente.setApellidoMaterno("Bancario");
-        cliente.setCorreoElectronico(req.getCorreo().trim().toLowerCase());
-        cliente.setTelefonoMovil(Long.parseLong(req.getTelefono().trim()));
-        cliente.setLadaMovil(52);
-        cliente.setActivo(true);
-        cliente.setCurp("CLTE" + System.currentTimeMillis() % 10000000000000L);
-        cliente.setRfc("RFC" + System.currentTimeMillis() % 1000000000L);
-        cliente.setFechaNacimiento(java.time.LocalDate.of(2000, 1, 1));
-        cliente.setSexo(com.proyecto.servicios.entity.onboarding.catalogos.Sexo.MASCULINO);
-        cliente.setNacionalidad(com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad.MEXICANA);
-        cliente.setEstadoCivil(com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.SOLTERO);
-        cliente.setOcupacion("Comercio Digital");
-        cliente.setEmpresa("Independiente");
-        cliente.setIngresoMensual(new java.math.BigDecimal("15000.00"));
-
         com.proyecto.servicios.repository.onboarding.ClienteRepository clienteRepo = 
                 org.springframework.web.context.support.WebApplicationContextUtils
                         .getRequiredWebApplicationContext(
@@ -261,6 +242,37 @@ public class AuthController {
                                         org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes())
                                         .getRequest().getServletContext()
                         ).getBean(com.proyecto.servicios.repository.onboarding.ClienteRepository.class);
+
+        String curpUpper = req.getCurp().trim().toUpperCase();
+        String rfcUpper = req.getRfc().trim().toUpperCase();
+
+        if (clienteRepo.existsByCurp(curpUpper)) {
+            throw new com.proyecto.servicios.exception.DuplicateResourceException("Ya existe un cliente registrado con la CURP proporcionada");
+        }
+        if (clienteRepo.existsByRfc(rfcUpper)) {
+            throw new com.proyecto.servicios.exception.DuplicateResourceException("Ya existe un cliente registrado con el RFC proporcionado");
+        }
+
+        // Crear Cliente bancario con datos de identidad y fiscales reales
+        com.proyecto.servicios.entity.onboarding.Cliente cliente = new com.proyecto.servicios.entity.onboarding.Cliente();
+        cliente.setNombre(req.getNombre().trim());
+        cliente.setSegundoNombre(req.getSegundoNombre() != null && !req.getSegundoNombre().trim().isEmpty() ? req.getSegundoNombre().trim() : null);
+        cliente.setApellidoPaterno(req.getApellidoPaterno().trim());
+        cliente.setApellidoMaterno(req.getApellidoMaterno().trim());
+        cliente.setCorreoElectronico(req.getCorreo().trim().toLowerCase());
+        cliente.setTelefonoMovil(Long.parseLong(req.getTelefono().trim()));
+        cliente.setLadaMovil(52);
+        cliente.setActivo(true);
+        cliente.setCurp(curpUpper);
+        cliente.setRfc(rfcUpper);
+        cliente.setFechaNacimiento(req.getFechaNacimiento());
+        cliente.setCodigoPostal(req.getCodigoPostal());
+        cliente.setSexo(com.proyecto.servicios.entity.onboarding.catalogos.Sexo.MASCULINO);
+        cliente.setNacionalidad(com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad.MEXICANA);
+        cliente.setEstadoCivil(com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.SOLTERO);
+        cliente.setOcupacion("Titular de Cuenta Digital");
+        cliente.setEmpresa("Independiente");
+        cliente.setIngresoMensual(new java.math.BigDecimal("15000.00"));
 
         com.proyecto.servicios.service.CuentaService cuentaService = 
                 org.springframework.web.context.support.WebApplicationContextUtils
