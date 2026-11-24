@@ -273,14 +273,31 @@ public class AuthController {
         cliente.setEmpresa("Independiente");
         cliente.setIngresoMensual(new java.math.BigDecimal("15000.00"));
 
-        // Domicilio fiscal asociado
+        // Domicilio fiscal real asociado
         com.proyecto.servicios.entity.onboarding.Domicilio dom = new com.proyecto.servicios.entity.onboarding.Domicilio();
         dom.setCliente(cliente);
-        dom.setCalle("Domicilio Registrado en Plataforma");
-        dom.setNumeroExterior("S/N");
-        dom.setColonia("Centro");
-        dom.setMunicipio("Ciudad de México");
-        dom.setEstado(com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico.CIUDAD_DE_MEXICO);
+        dom.setCalle(req.getCalle().trim());
+        dom.setNumeroExterior(req.getNumeroExterior().trim());
+        dom.setNumeroInterior(req.getNumeroInterior() != null && !req.getNumeroInterior().trim().isEmpty() ? req.getNumeroInterior().trim() : null);
+        dom.setColonia(req.getColonia().trim());
+        dom.setMunicipio(req.getMunicipio().trim());
+
+        // Parsear o mapear EstadoMexico
+        com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico estadoEnum = 
+                com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico.CIUDAD_DE_MEXICO;
+        try {
+            String estClean = req.getEstado().trim().toUpperCase().replace(" ", "_");
+            estadoEnum = com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico.valueOf(estClean);
+        } catch (Exception ex) {
+            // Si viene con acentos o variación, fallback inteligente o asigna por defecto
+            for (com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico em : com.proyecto.servicios.entity.onboarding.catalogos.EstadoMexico.values()) {
+                if (em.name().equalsIgnoreCase(req.getEstado().trim().replace(" ", "_"))) {
+                    estadoEnum = em;
+                    break;
+                }
+            }
+        }
+        dom.setEstado(estadoEnum);
         dom.setCodigoPostal(req.getCodigoPostal());
         dom.setPais(com.proyecto.servicios.entity.onboarding.catalogos.Pais.MEXICO);
         cliente.setDomicilio(dom);
