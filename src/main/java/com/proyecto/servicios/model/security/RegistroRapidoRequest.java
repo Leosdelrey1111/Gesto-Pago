@@ -51,6 +51,16 @@ public class RegistroRapidoRequest {
     @Pattern(regexp = "^\\d{10}$", message = "El teléfono debe contener exactamente 10 dígitos")
     private String telefono;
 
+    // Campos KYC de Cliente
+    private String sexo;
+
+    private String estadoCivil;
+
+    private String ocupacion;
+
+    @DecimalMin(value = "0.01", message = "El ingreso mensual debe ser mayor a 0")
+    private java.math.BigDecimal ingresoMensual;
+
     // Paso 3: Domicilio
     @NotBlank(message = "La calle es obligatoria")
     @Size(min = 2, max = 100, message = "La calle debe tener entre 2 y 100 caracteres")

@@ -355,12 +355,41 @@ public class AuthController {
         cliente.setCurp(curpUpper);
         cliente.setRfc(rfcUpper);
         cliente.setFechaNacimiento(req.getFechaNacimiento());
-        cliente.setSexo(com.proyecto.servicios.entity.onboarding.catalogos.Sexo.MASCULINO);
+
+        // Sexo
+        com.proyecto.servicios.entity.onboarding.catalogos.Sexo sexoEnum = 
+                com.proyecto.servicios.entity.onboarding.catalogos.Sexo.MASCULINO;
+        if (req.getSexo() != null && !req.getSexo().isBlank()) {
+            try {
+                sexoEnum = com.proyecto.servicios.entity.onboarding.catalogos.Sexo.valueOf(req.getSexo().trim().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        cliente.setSexo(sexoEnum);
+
         cliente.setNacionalidad(com.proyecto.servicios.entity.onboarding.catalogos.Nacionalidad.MEXICANA);
-        cliente.setEstadoCivil(com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.SOLTERO);
-        cliente.setOcupacion("Titular de Cuenta Digital");
-        cliente.setEmpresa("Independiente");
-        cliente.setIngresoMensual(new java.math.BigDecimal("15000.00"));
+
+        // Estado Civil
+        com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil estadoCivilEnum = 
+                com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.SOLTERO;
+        if (req.getEstadoCivil() != null && !req.getEstadoCivil().isBlank()) {
+            try {
+                estadoCivilEnum = com.proyecto.servicios.entity.onboarding.catalogos.EstadoCivil.valueOf(req.getEstadoCivil().trim().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        cliente.setEstadoCivil(estadoCivilEnum);
+
+        // Ocupación
+        String ocupacion = (req.getOcupacion() != null && !req.getOcupacion().isBlank()) 
+                ? req.getOcupacion().trim() 
+                : "Empleado";
+        cliente.setOcupacion(ocupacion);
+        cliente.setEmpresa("Sector Privado");
+
+        // Ingreso Mensual
+        java.math.BigDecimal ingreso = (req.getIngresoMensual() != null && req.getIngresoMensual().compareTo(java.math.BigDecimal.ZERO) > 0)
+                ? req.getIngresoMensual()
+                : new java.math.BigDecimal("15000.00");
+        cliente.setIngresoMensual(ingreso);
 
         // Domicilio fiscal real asociado
         com.proyecto.servicios.entity.onboarding.Domicilio dom = new com.proyecto.servicios.entity.onboarding.Domicilio();
