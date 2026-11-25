@@ -302,6 +302,20 @@ public class AuthController {
         ));
     }
 
+    @GetMapping("/verificar-correo")
+    public ResponseEntity<?> verificarCorreoExiste(@RequestParam("correo") String correo) {
+        if (correo == null || correo.trim().isBlank()) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("disponible", false, "mensaje", "Correo inválido"));
+        }
+        boolean existe = usuarioRepository.existsByCorreo(correo.trim().toLowerCase());
+        return ResponseEntity.ok(java.util.Map.of(
+                "disponible", !existe,
+                "existe", existe,
+                "correo", correo.trim().toLowerCase(),
+                "mensaje", existe ? "El correo electrónico ya está registrado" : "Correo disponible"
+        ));
+    }
+
     @PostMapping("/registro")
     public ResponseEntity<?> registrarNuevoUsuario(
             @Valid @RequestBody com.proyecto.servicios.model.security.RegistroRapidoRequest req) {
