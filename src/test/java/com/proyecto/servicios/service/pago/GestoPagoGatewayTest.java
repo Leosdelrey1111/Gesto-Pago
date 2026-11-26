@@ -101,7 +101,7 @@ class GestoPagoGatewayTest {
         String a = gateway.generarUpc();
         String b = gateway.generarUpc();
         assertNotEquals(a, b);
-        assertTrue(a.startsWith("UPC_83_"));
+        assertTrue(a.length() >= 10 && a.length() <= 15);
     }
 
     @Test

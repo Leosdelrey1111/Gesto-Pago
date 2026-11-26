@@ -302,7 +302,7 @@ class PagoFlujoIntegracionTest {
         servicio.pagarServicio(pago(clave(1)), CORREO);
 
         Transaccion tx = tablaTx.get(0);
-        assertTrue(tx.getUpc().startsWith("UPC_83_"));
+        assertTrue(tx.getUpc().length() >= 10 && tx.getUpc().length() <= 15);
         assertTrue(tx.getPayloadEnviado().contains(tx.getUpc()));
         assertFalse(tx.getPayloadEnviado().contains(PIN), "el payload guardado no contiene credenciales");
     }

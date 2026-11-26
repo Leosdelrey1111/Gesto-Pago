@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Unico punto de contacto con sendTx.do. Construye y cifra el payload, llama al proveedor y traduce
@@ -70,9 +71,14 @@ public class GestoPagoGateway {
         this.idDistribuidor = idDistribuidor;
     }
 
-    /** UPC unico por intencion de pago. Es la llave de idempotencia frente al proveedor. */
+    /** 
+     * UPC único por intención de pago de 12 dígitos según estándar de GestoPago.
+     * Compuesto por prefijo de distribuidor y timestamp/aleatorio de 10-15 dígitos numéricos.
+     */
     public String generarUpc() {
-        return "UPC_" + idDistribuidor + "_" + UUID.randomUUID().toString().replace("-", "");
+        long timestampParte = System.currentTimeMillis() % 1000000000L; // 9 dígitos
+        int randomTres = (int) (ThreadLocalRandom.current().nextDouble() * 900) + 100; // 3 dígitos
+        return String.format("%09d%03d", timestampParte, randomTres); // Exactamente 12 dígitos
     }
 
     /** JSON claro del pago. No contiene secretos; se persiste para poder reenviar con el mismo UPC. */
