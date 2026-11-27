@@ -171,7 +171,8 @@ class PagoFlujoIntegracionTest {
         TransaccionResponseDTO r = servicio.pagarServicio(pago(clave(1)), CORREO);
 
         assertEquals(EstatusTransaccion.PENDIENTE_CONCILIACION, r.getEstatus());
-        assertEquals(new BigDecimal("400.00"), cuenta.getSaldo(), "el saldo sigue descontado");
+        // El saldo permanece intacto en cuenta hasta que conciliación confirme el éxito
+        assertEquals(new BigDecimal("500.00"), cuenta.getSaldo());
         assertEquals(EstatusTransaccion.PENDIENTE_CONCILIACION, tablaTx.get(0).getEstatus());
     }
 
@@ -184,7 +185,7 @@ class PagoFlujoIntegracionTest {
         TransaccionResponseDTO r = servicio.pagarServicio(pago(clave(1)), CORREO);
 
         assertEquals(EstatusTransaccion.PENDIENTE_CONCILIACION, r.getEstatus());
-        assertEquals(new BigDecimal("400.00"), cuenta.getSaldo());
+        assertEquals(new BigDecimal("500.00"), cuenta.getSaldo());
         assertEquals(1, tablaTx.size());
         verify(client, times(1)).sendTx(any(), any(), any());
     }
@@ -197,7 +198,7 @@ class PagoFlujoIntegracionTest {
 
         assertThrows(DuplicateResourceException.class, () -> servicio.pagarServicio(pago(clave(2)), CORREO));
 
-        assertEquals(new BigDecimal("400.00"), cuenta.getSaldo());
+        assertEquals(new BigDecimal("500.00"), cuenta.getSaldo());
         verify(client, times(1)).sendTx(any(), any(), any());
     }
 

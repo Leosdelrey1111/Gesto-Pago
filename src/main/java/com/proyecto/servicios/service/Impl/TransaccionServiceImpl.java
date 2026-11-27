@@ -48,17 +48,28 @@ public class TransaccionServiceImpl implements TransaccionService {
     private final PagoLedgerService ledger;
     private final GestoPagoGateway gateway;
     private final TransaccionRepository transaccionRepository;
+    private final com.proyecto.servicios.service.EmailService emailService;
+
+    public TransaccionServiceImpl(AutorizacionClienteValidator autorizacionValidator,
+                                  ProductoPagoValidator productoValidator,
+                                  PagoLedgerService ledger,
+                                  GestoPagoGateway gateway,
+                                  TransaccionRepository transaccionRepository,
+                                  com.proyecto.servicios.service.EmailService emailService) {
+        this.autorizacionValidator = autorizacionValidator;
+        this.productoValidator = productoValidator;
+        this.ledger = ledger;
+        this.gateway = gateway;
+        this.transaccionRepository = transaccionRepository;
+        this.emailService = emailService;
+    }
 
     public TransaccionServiceImpl(AutorizacionClienteValidator autorizacionValidator,
                                   ProductoPagoValidator productoValidator,
                                   PagoLedgerService ledger,
                                   GestoPagoGateway gateway,
                                   TransaccionRepository transaccionRepository) {
-        this.autorizacionValidator = autorizacionValidator;
-        this.productoValidator = productoValidator;
-        this.ledger = ledger;
-        this.gateway = gateway;
-        this.transaccionRepository = transaccionRepository;
+        this(autorizacionValidator, productoValidator, ledger, gateway, transaccionRepository, null);
     }
 
     @Override
@@ -80,11 +91,27 @@ public class TransaccionServiceImpl implements TransaccionService {
         ResultadoProveedor resultado = gateway.enviar(payload, tx.getUpc());
 
         Transaccion cerrada = cerrar(tx, resultado);
+
+        // Envío asíncrono del ticket por correo electrónico (aprobado o rechazado)
+        notificarTicketPorCorreo(cerrada, correoAutenticado);
+
         return switch (resultado.tipo()) {
             case EXITO, INCIERTO -> aRespuesta(cerrada);
             case RECHAZO -> throw new ProveedorRechazoException(resultado.codigo());
             case NO_ENVIADO -> throw new ProveedorNoDisponibleException("El proveedor no recibio la solicitud");
         };
+    }
+
+    private void notificarTicketPorCorreo(Transaccion tx, String correoAutenticado) {
+        if (emailService == null || correoAutenticado == null || correoAutenticado.trim().isEmpty()) {
+            return;
+        }
+        try {
+            com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket = generarTicket(tx.getId(), correoAutenticado);
+            emailService.enviarTicketComprobante(correoAutenticado, ticket);
+        } catch (Exception e) {
+            log.warn("No fue posible enviar comprobante por correo para tx={}: {}", tx.getId(), e.getMessage());
+        }
     }
 
     @Override

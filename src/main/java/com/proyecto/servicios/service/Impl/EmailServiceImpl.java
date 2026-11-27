@@ -69,6 +69,152 @@ public class EmailServiceImpl implements EmailService {
         enviarConSmtp(destinatario, asunto, contenidoPlano, contenidoHtml);
     }
 
+    @Async
+    @Override
+    public void enviarTicketComprobante(String destinatario, com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket) {
+        if (destinatario == null || destinatario.trim().isEmpty() || ticket == null) {
+            return;
+        }
+
+        boolean esExitosa = "PAGADO / APROBADO".equalsIgnoreCase(ticket.getEstatus()) || "EXITOSA".equalsIgnoreCase(ticket.getEstatus());
+        String asunto = (esExitosa ? "✅ Comprobante de Pago Aprobado" : "❌ Comprobante de Pago Rechazado")
+                + " - Folio #" + ticket.getFolio() + " | GestoPago Bank";
+
+        String contenidoPlano =
+                "Estimado cliente,\n\n" +
+                (esExitosa ? "Su pago ha sido procesado exitosamente." : "Su intento de pago fue rechazado por el proveedor. No se aplicó ningún cargo.") + "\n\n" +
+                "Detalles de la Operación:\n" +
+                "--------------------------------------------------\n" +
+                "Folio: #" + ticket.getFolio() + "\n" +
+                "Estatus: " + ticket.getEstatus() + "\n" +
+                "Servicio: " + ticket.getServicio() + "\n" +
+                "Producto: " + ticket.getProducto() + "\n" +
+                "Referencia / Teléfono: " + ticket.getReferenciaOTelefono() + "\n" +
+                "Monto: $" + (ticket.getMonto() != null ? ticket.getMonto().toPlainString() : "0.00") + " MXN\n" +
+                "UPC: " + (ticket.getUpc() != null ? ticket.getUpc() : "N/A") + "\n" +
+                "Autorización: " + (ticket.getNumeroAutorizacion() != null ? ticket.getNumeroAutorizacion() : "N/A") + "\n" +
+                "Fecha / Hora: " + (ticket.getFechaOperacion() != null ? ticket.getFechaOperacion().toString() : "N/A") + "\n" +
+                "Cuenta Origen: " + ticket.getNumeroCuenta() + "\n" +
+                "--------------------------------------------------\n\n" +
+                (ticket.getLeyenda() != null ? ticket.getLeyenda() + "\n\n" : "") +
+                "Para cualquier duda o aclaración: 800-437-8672\n\n" +
+                "Atentamente,\n" +
+                "GestoPago Bank";
+
+        String contenidoHtml = construirHtmlTicket(ticket, esExitosa);
+
+        if (resendApiKey != null && !resendApiKey.trim().isEmpty()) {
+            if (enviarConResend(destinatario, asunto, contenidoPlano, contenidoHtml)) {
+                return;
+            }
+        }
+
+        if (brevoApiKey != null && !brevoApiKey.trim().isEmpty()) {
+            if (enviarConBrevo(destinatario, asunto, contenidoPlano, contenidoHtml)) {
+                return;
+            }
+        }
+
+        enviarConSmtp(destinatario, asunto, contenidoPlano, contenidoHtml);
+    }
+
+    private String construirHtmlTicket(com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket, boolean esExitosa) {
+        String colorStatus = esExitosa ? "#10B981" : "#EF4444";
+        String bgBadge = esExitosa ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
+        String borderBadge = esExitosa ? "#10B981" : "#EF4444";
+        String icono = esExitosa ? "✓" : "✕";
+        String tituloBadge = esExitosa ? "PAGO APROBADO" : "PAGO RECHAZADO";
+
+        String montoStr = ticket.getMonto() != null ? "$" + ticket.getMonto().toPlainString() + " MXN" : "$0.00 MXN";
+        String fechaStr = ticket.getFechaOperacion() != null ? ticket.getFechaOperacion().toString().replace('T', ' ') : "N/A";
+        String upcStr = ticket.getUpc() != null ? ticket.getUpc() : "N/A";
+        String autStr = ticket.getNumeroAutorizacion() != null ? ticket.getNumeroAutorizacion() : "N/A";
+        String idTxStr = ticket.getIdTransaccionProveedor() != null ? ticket.getIdTransaccionProveedor() : "N/A";
+
+        return """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Comprobante de Pago - GestoPago Bank</title>
+              <style>
+                body { margin: 0; padding: 0; background-color: #070B14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC; }
+                .wrapper { width: 100%; table-layout: fixed; background-color: #070B14; padding: 36px 0; }
+                .container { max-width: 540px; margin: 0 auto; background: #0E1626; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); overflow: hidden; box-shadow: 0 20px 45px rgba(0,0,0,0.7); }
+                .header { padding: 28px 32px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, #131E35 0%%, #0E1626 100%%); }
+                .bank-logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #38BDF8; margin: 0; text-transform: uppercase; }
+                .bank-sub { font-size: 10px; color: #94A3B8; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+                .content { padding: 32px 32px; }
+                .status-badge { display: inline-block; padding: 8px 18px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; border: 1px solid %s; background-color: %s; color: %s; }
+                .amount-box { text-align: center; margin-bottom: 28px; padding: 20px; background: rgba(15, 23, 42, 0.6); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+                .amount-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94A3B8; margin-bottom: 6px; }
+                .amount-val { font-size: 32px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
+                .ticket-table { width: 100%%; border-collapse: collapse; margin-bottom: 24px; }
+                .ticket-table td { padding: 10px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+                .col-label { color: #94A3B8; text-align: left; }
+                .col-val { color: #F1F5F9; font-weight: 600; text-align: right; font-family: -apple-system, BlinkMacSystemFont, monospace; }
+                .notice-box { background: rgba(56, 189, 248, 0.05); border-left: 3px solid #0284C7; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; }
+                .notice-text { font-size: 11.5px; color: #94A3B8; margin: 0; line-height: 1.5; }
+                .footer { padding: 22px 32px; background-color: #090E1A; text-align: center; border-top: 1px solid rgba(255,255,255,0.04); }
+                .footer-text { font-size: 11px; color: #64748B; margin: 0; line-height: 1.6; }
+              </style>
+            </head>
+            <body>
+              <div class="wrapper">
+                <div class="container">
+                  <div class="header">
+                    <div class="bank-logo">GestoPago Bank</div>
+                    <div class="bank-sub">Ecosistema Financiero Digital</div>
+                  </div>
+                  <div class="content" style="text-align: center;">
+                    <div class="status-badge">%s %s</div>
+                    <div class="amount-box">
+                      <div class="amount-label">Monto de la Transacción</div>
+                      <div class="amount-val" style="color: %s;">%s</div>
+                    </div>
+                    <table class="ticket-table">
+                      <tr><td class="col-label">Folio de Control</td><td class="col-val">#%d</td></tr>
+                      <tr><td class="col-label">Servicio</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Producto</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Referencia / Teléfono</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Código UPC</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">No. Autorización</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">ID Transacción Proveedor</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Cuenta Bancaria</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Fecha y Hora</td><td class="col-val">%s</td></tr>
+                    </table>
+                    <div class="notice-box">
+                      <p class="notice-text">%s</p>
+                    </div>
+                  </div>
+                  <div class="footer">
+                    <p class="footer-text">
+                      Para cualquier duda o aclaración, comuníquese al <strong>800-437-8672</strong>.<br>
+                      Comprobante emitido automáticamente por GestoPago Bank. Conserve este comprobante.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </body>
+            </html>
+            """.formatted(
+                borderBadge, bgBadge, colorStatus,
+                icono, tituloBadge,
+                colorStatus, montoStr,
+                ticket.getFolio() != null ? ticket.getFolio() : 0,
+                ticket.getServicio() != null ? ticket.getServicio() : "N/A",
+                ticket.getProducto() != null ? ticket.getProducto() : "N/A",
+                ticket.getReferenciaOTelefono() != null ? ticket.getReferenciaOTelefono() : "N/A",
+                upcStr,
+                autStr,
+                idTxStr,
+                ticket.getNumeroCuenta() != null ? ticket.getNumeroCuenta() : "N/A",
+                fechaStr,
+                ticket.getLeyenda() != null ? ticket.getLeyenda() : "Conserve este comprobante para cualquier aclaración."
+            );
+    }
+
     private String construirHtmlOtp(String codigoOtp) {
         String plantilla = """
             <!DOCTYPE html>
