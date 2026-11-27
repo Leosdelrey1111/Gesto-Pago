@@ -62,7 +62,7 @@ class TransaccionServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        servicio = new TransaccionServiceImpl(autorizacion, productoValidator, ledger, gateway, transaccionRepository);
+        servicio = new TransaccionServiceImpl(autorizacion, productoValidator, ledger, gateway, transaccionRepository, null);
 
         request = PagarServicioRequestDTO.builder().numeroCuenta("0000000001").idProducto("582").idServicio("133")
                 .telefonoOreferencia("5512345678").passwordOPin("1234").claveIdempotencia(CLAVE).build();

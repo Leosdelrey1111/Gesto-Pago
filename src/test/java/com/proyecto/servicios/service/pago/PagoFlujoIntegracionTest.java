@@ -130,7 +130,7 @@ class PagoFlujoIntegracionTest {
         ledger = new PagoLedgerService(cuentaRepo, txRepo, props);
         servicio = new TransaccionServiceImpl(
                 new AutorizacionClienteValidator(usuarioRepo, cuentaRepo, encoder),
-                new ProductoPagoValidator(catalogo, props), ledger, gateway, txRepo);
+                new ProductoPagoValidator(catalogo, props), ledger, gateway, txRepo, null);
     }
 
     private PagarServicioRequestDTO pago(String clave) {
