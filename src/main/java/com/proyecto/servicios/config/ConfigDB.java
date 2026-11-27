@@ -29,17 +29,28 @@ import java.util.Map;
 @EnableJpaRepositories(
         basePackages = {
                 "com.proyecto.servicios.repository.sf",
-                "com.proyecto.servicios.repository.gestopago",
                 "com.proyecto.servicios.repository.onboarding",
                 "com.proyecto.servicios.repository.transaccion"
         },
+        includeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+                type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+                classes = {
+                        com.proyecto.servicios.repository.gestopago.GestoPagoTokenRepository.class
+                }
+        ),
         transactionManagerRef = "sfTransactionManager",
         entityManagerFactoryRef = "sfEntityManagerFactory"
 )
 @EnableMongoRepositories(
         basePackages = {
                 "com.proyecto.servicios.repository.gestopago"
-        }
+        },
+        includeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+                type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+                classes = {
+                        com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository.class
+                }
+        )
 )
 public class ConfigDB {
     @Autowired
@@ -53,8 +64,8 @@ public class ConfigDB {
             config.setPassword(env.getProperty("spring.datasource.password", "admin"));
             config.setUsername(env.getProperty("spring.datasource.username", "postgres"));
             config.setMaximumPoolSize(10);
-            config.setMaxLifetime(18800);
-            config.setConnectionTimeout(5000);
+            config.setMaxLifetime(1800000);
+            config.setConnectionTimeout(15000);
             config.setValidationTimeout(5000);
             config.setMinimumIdle(2);
             config.setConnectionTestQuery("SELECT 1");
