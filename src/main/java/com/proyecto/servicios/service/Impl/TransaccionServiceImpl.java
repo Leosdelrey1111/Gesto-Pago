@@ -50,11 +50,13 @@ public class TransaccionServiceImpl implements TransaccionService {
     private final TransaccionRepository transaccionRepository;
     private final com.proyecto.servicios.service.EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public TransaccionServiceImpl(AutorizacionClienteValidator autorizacionValidator,
                                   ProductoPagoValidator productoValidator,
                                   PagoLedgerService ledger,
                                   GestoPagoGateway gateway,
                                   TransaccionRepository transaccionRepository,
+                                  @org.springframework.beans.factory.annotation.Autowired(required = false)
                                   com.proyecto.servicios.service.EmailService emailService) {
         this.autorizacionValidator = autorizacionValidator;
         this.productoValidator = productoValidator;
