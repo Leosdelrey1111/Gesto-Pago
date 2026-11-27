@@ -46,10 +46,14 @@ public class CatalogoServiceImpl implements CatalogoService {
                 huboCambios = true;
             }
         }
-        // Si habia registros antiguos sin urlLogo en MongoDB, los guardamos en bulk una sola vez
+        // Si habia registros antiguos sin urlLogo en MongoDB, intentamos actualizarlos de forma segura
         if (huboCambios) {
-            catalogoProductoRepository.saveAll(lista);
-            log.info("MongoDB actualizado con las URLs de logos para {} productos", lista.size());
+            try {
+                catalogoProductoRepository.saveAll(lista);
+                log.info("MongoDB actualizado con las URLs de logos para {} productos", lista.size());
+            } catch (Exception ex) {
+                log.warn("No fue posible persistir las URLs de logos en MongoDB (permisos o modo lectura): {}", ex.getMessage());
+            }
         }
         return lista;
     }

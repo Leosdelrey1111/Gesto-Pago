@@ -25,17 +25,22 @@ public class CatalogoController {
         this.catalogoService = catalogoService;
     }
 
-    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('SCOPE_READ')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('SCOPE_READ') or hasRole('CLIENTE') or hasRole('ADMIN')")
     @GetMapping(value = "/gestopago/catalogo", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> obtenerCatalogo() {
-        List<CatalogoProducto> catalogo = catalogoService.obtenerCatalogo();
-        if (catalogo.isEmpty()) {
-            GenericResponse respuesta = new GenericResponse();
-            respuesta.setCodigo(1);
-            respuesta.setMensaje("El catalogo de GestoPago no ha sido cargado aun en MongoDB");
-            return new ResponseEntity<>(respuesta, HttpStatus.NOT_FOUND);
+        try {
+            List<CatalogoProducto> catalogo = catalogoService.obtenerCatalogo();
+            if (catalogo == null || catalogo.isEmpty()) {
+                GenericResponse respuesta = new GenericResponse();
+                respuesta.setCodigo(1);
+                respuesta.setMensaje("El catalogo de GestoPago no ha sido cargado aun en MongoDB");
+                return new ResponseEntity<>(respuesta, HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(catalogo, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("[ERROR CATALOGO] Falla al obtener catalogo de MongoDB: ", e);
+            throw e;
         }
-        return new ResponseEntity<>(catalogo, HttpStatus.OK);
     }
 
     /**
