@@ -29,13 +29,14 @@ import java.util.Map;
 @EnableJpaRepositories(
         basePackages = {
                 "com.proyecto.servicios.repository.sf",
+                "com.proyecto.servicios.repository.gestopago",
                 "com.proyecto.servicios.repository.onboarding",
                 "com.proyecto.servicios.repository.transaccion"
         },
-        includeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+        excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
                 type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
                 classes = {
-                        com.proyecto.servicios.repository.gestopago.GestoPagoTokenRepository.class
+                        com.proyecto.servicios.repository.gestopago.CatalogoProductoRepository.class
                 }
         ),
         transactionManagerRef = "sfTransactionManager",
