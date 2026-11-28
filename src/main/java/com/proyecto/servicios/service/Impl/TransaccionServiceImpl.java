@@ -97,14 +97,57 @@ public class TransaccionServiceImpl implements TransaccionService {
 
     private void notificarTicketPorCorreo(Transaccion tx, String correoAutenticado) {
         if (emailService == null || correoAutenticado == null || correoAutenticado.trim().isEmpty()) {
+            log.info("Omitiendo notificación de ticket: emailService={}, correoAutenticado={}", emailService != null, correoAutenticado);
             return;
         }
         try {
-            com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket = generarTicket(tx.getId(), correoAutenticado);
+            com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket = construirTicketDesdeTransaccion(tx);
+            log.info("Enviando comprobante de pago por correo a {} para folio #{}", correoAutenticado, tx.getId());
             emailService.enviarTicketComprobante(correoAutenticado, ticket);
         } catch (Exception e) {
-            log.warn("No fue posible enviar comprobante por correo para tx={}: {}", tx.getId(), e.getMessage());
+            log.warn("No fue posible enviar comprobante por correo para tx={}: {}", tx.getId(), e.getMessage(), e);
         }
+    }
+
+    private com.proyecto.servicios.model.transaccion.TicketResponseDTO construirTicketDesdeTransaccion(Transaccion tx) {
+        String tituloComprobante = switch (tx.getEstatus()) {
+            case EXITOSA -> "COMPROBANTE OFICIAL DE PAGO";
+            case RECHAZADA -> "COMPROBANTE DE PAGO RECHAZADO";
+            case FALLIDA -> "COMPROBANTE DE OPERACIÓN FALLIDA";
+            case PENDIENTE_CONCILIACION, PENDIENTE -> "COMPROBANTE DE PAGO EN PROCESO";
+        };
+
+        String leyendaComprobante = switch (tx.getEstatus()) {
+            case EXITOSA -> "Transacción procesada y liquidada a través de GestoPago. Conserve este comprobante.";
+            case RECHAZADA -> "La operación fue rechazada por el proveedor. No se aplicó ningún cargo a su cuenta.";
+            case FALLIDA -> "No fue posible conectar con el proveedor. Su saldo no fue debitado.";
+            case PENDIENTE_CONCILIACION, PENDIENTE -> "La transacción se encuentra en validación.";
+        };
+
+        String estatusTexto = switch (tx.getEstatus()) {
+            case EXITOSA -> "PAGADO / APROBADO";
+            case RECHAZADA -> "RECHAZADA";
+            case FALLIDA -> "FALLIDA";
+            case PENDIENTE_CONCILIACION -> "EN CONCILIACIÓN";
+            case PENDIENTE -> "PENDIENTE";
+        };
+
+        return com.proyecto.servicios.model.transaccion.TicketResponseDTO.builder()
+                .titulo(tituloComprobante)
+                .folio(tx.getId())
+                .upc(tx.getUpc())
+                .numeroAutorizacion(tx.getNumAutorizacion() != null ? tx.getNumAutorizacion() : "N/A")
+                .idTransaccionProveedor(tx.getIdTxGestoPago() != null ? tx.getIdTxGestoPago() : "N/A")
+                .servicio(tx.getIdServicio())
+                .producto(tx.getNombreProducto())
+                .referenciaOTelefono(tx.getTelefono() != null ? tx.getTelefono() : tx.getReferencia())
+                .monto(tx.getMonto())
+                .numeroCuenta(tx.getNumeroCuenta())
+                .fechaOperacion(tx.getFechaCreacion())
+                .estatus(estatusTexto)
+                .leyenda(leyendaComprobante)
+                .emisor("GestoPagos Red Digital")
+                .build();
     }
 
     @Override

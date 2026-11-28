@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 
 @SpringBootApplication
 @EnableScheduling
+@org.springframework.scheduling.annotation.EnableAsync
 @EnableFeignClients
 @Slf4j
 
