@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+@lombok.extern.slf4j.Slf4j
 @RestController
 public class CatalogoController {
 
