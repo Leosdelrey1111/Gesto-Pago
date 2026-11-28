@@ -139,8 +139,14 @@ public class EmailServiceImpl implements EmailService {
         String upcStr = ticket.getUpc() != null ? ticket.getUpc() : "N/A";
         String autStr = ticket.getNumeroAutorizacion() != null ? ticket.getNumeroAutorizacion() : "N/A";
         String idTxStr = ticket.getIdTransaccionProveedor() != null ? ticket.getIdTransaccionProveedor() : "N/A";
+        String folioStr = String.valueOf(ticket.getFolio() != null ? ticket.getFolio() : 0);
+        String servicioStr = ticket.getServicio() != null ? ticket.getServicio() : "N/A";
+        String productoStr = ticket.getProducto() != null ? ticket.getProducto() : "N/A";
+        String refStr = ticket.getReferenciaOTelefono() != null ? ticket.getReferenciaOTelefono() : "N/A";
+        String cuentaStr = ticket.getNumeroCuenta() != null ? ticket.getNumeroCuenta() : "N/A";
+        String leyendaStr = ticket.getLeyenda() != null ? ticket.getLeyenda() : "Conserve este comprobante para cualquier aclaración.";
 
-        return """
+        String plantilla = """
             <!DOCTYPE html>
             <html lang="es">
             <head>
@@ -151,15 +157,15 @@ public class EmailServiceImpl implements EmailService {
                 body { margin: 0; padding: 0; background-color: #070B14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #F8FAFC; }
                 .wrapper { width: 100%; table-layout: fixed; background-color: #070B14; padding: 36px 0; }
                 .container { max-width: 540px; margin: 0 auto; background: #0E1626; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); overflow: hidden; box-shadow: 0 20px 45px rgba(0,0,0,0.7); }
-                .header { padding: 28px 32px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, #131E35 0%%, #0E1626 100%%); }
+                .header { padding: 28px 32px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, #131E35 0%, #0E1626 100%); }
                 .bank-logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #38BDF8; margin: 0; text-transform: uppercase; }
                 .bank-sub { font-size: 10px; color: #94A3B8; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
                 .content { padding: 32px 32px; }
-                .status-badge { display: inline-block; padding: 8px 18px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; border: 1px solid %s; background-color: %s; color: %s; }
+                .status-badge { display: inline-block; padding: 8px 18px; border-radius: 9999px; font-size: 12px; font-weight: 800; letter-spacing: 1px; margin-bottom: 20px; }
                 .amount-box { text-align: center; margin-bottom: 28px; padding: 20px; background: rgba(15, 23, 42, 0.6); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
                 .amount-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94A3B8; margin-bottom: 6px; }
-                .amount-val { font-size: 32px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; }
-                .ticket-table { width: 100%%; border-collapse: collapse; margin-bottom: 24px; }
+                .amount-val { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+                .ticket-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
                 .ticket-table td { padding: 10px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
                 .col-label { color: #94A3B8; text-align: left; }
                 .col-val { color: #F1F5F9; font-weight: 600; text-align: right; font-family: -apple-system, BlinkMacSystemFont, monospace; }
@@ -177,24 +183,26 @@ public class EmailServiceImpl implements EmailService {
                     <div class="bank-sub">Ecosistema Financiero Digital</div>
                   </div>
                   <div class="content" style="text-align: center;">
-                    <div class="status-badge">%s %s</div>
+                    <div class="status-badge" style="border: 1px solid {{BORDER_BADGE}}; background-color: {{BG_BADGE}}; color: {{COLOR_STATUS}};">
+                      {{ICONO}} {{TITULO_BADGE}}
+                    </div>
                     <div class="amount-box">
                       <div class="amount-label">Monto de la Transacción</div>
-                      <div class="amount-val" style="color: %s;">%s</div>
+                      <div class="amount-val" style="color: {{COLOR_STATUS}};">{{MONTO}}</div>
                     </div>
                     <table class="ticket-table">
-                      <tr><td class="col-label">Folio de Control</td><td class="col-val">#%d</td></tr>
-                      <tr><td class="col-label">Servicio</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">Producto</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">Referencia / Teléfono</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">Código UPC</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">No. Autorización</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">ID Transacción Proveedor</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">Cuenta Bancaria</td><td class="col-val">%s</td></tr>
-                      <tr><td class="col-label">Fecha y Hora</td><td class="col-val">%s</td></tr>
+                      <tr><td class="col-label">Folio de Control</td><td class="col-val">#{{FOLIO}}</td></tr>
+                      <tr><td class="col-label">Servicio</td><td class="col-val">{{SERVICIO}}</td></tr>
+                      <tr><td class="col-label">Producto</td><td class="col-val">{{PRODUCTO}}</td></tr>
+                      <tr><td class="col-label">Referencia / Teléfono</td><td class="col-val">{{REFERENCIA}}</td></tr>
+                      <tr><td class="col-label">Código UPC</td><td class="col-val">{{UPC}}</td></tr>
+                      <tr><td class="col-label">No. Autorización</td><td class="col-val">{{AUTORIZACION}}</td></tr>
+                      <tr><td class="col-label">ID Transacción Proveedor</td><td class="col-val">{{ID_TX}}</td></tr>
+                      <tr><td class="col-label">Cuenta Bancaria</td><td class="col-val">{{CUENTA}}</td></tr>
+                      <tr><td class="col-label">Fecha y Hora</td><td class="col-val">{{FECHA}}</td></tr>
                     </table>
                     <div class="notice-box">
-                      <p class="notice-text">%s</p>
+                      <p class="notice-text">{{LEYENDA}}</p>
                     </div>
                   </div>
                   <div class="footer">
@@ -207,21 +215,25 @@ public class EmailServiceImpl implements EmailService {
               </div>
             </body>
             </html>
-            """.formatted(
-                borderBadge, bgBadge, colorStatus,
-                icono, tituloBadge,
-                colorStatus, montoStr,
-                ticket.getFolio() != null ? ticket.getFolio() : 0,
-                ticket.getServicio() != null ? ticket.getServicio() : "N/A",
-                ticket.getProducto() != null ? ticket.getProducto() : "N/A",
-                ticket.getReferenciaOTelefono() != null ? ticket.getReferenciaOTelefono() : "N/A",
-                upcStr,
-                autStr,
-                idTxStr,
-                ticket.getNumeroCuenta() != null ? ticket.getNumeroCuenta() : "N/A",
-                fechaStr,
-                ticket.getLeyenda() != null ? ticket.getLeyenda() : "Conserve este comprobante para cualquier aclaración."
-            );
+            """;
+
+        return plantilla
+                .replace("{{BORDER_BADGE}}", borderBadge)
+                .replace("{{BG_BADGE}}", bgBadge)
+                .replace("{{COLOR_STATUS}}", colorStatus)
+                .replace("{{ICONO}}", icono)
+                .replace("{{TITULO_BADGE}}", tituloBadge)
+                .replace("{{MONTO}}", montoStr)
+                .replace("{{FOLIO}}", folioStr)
+                .replace("{{SERVICIO}}", servicioStr)
+                .replace("{{PRODUCTO}}", productoStr)
+                .replace("{{REFERENCIA}}", refStr)
+                .replace("{{UPC}}", upcStr)
+                .replace("{{AUTORIZACION}}", autStr)
+                .replace("{{ID_TX}}", idTxStr)
+                .replace("{{CUENTA}}", cuentaStr)
+                .replace("{{FECHA}}", fechaStr)
+                .replace("{{LEYENDA}}", leyendaStr);
     }
 
     private String construirHtmlOtp(String codigoOtp) {
