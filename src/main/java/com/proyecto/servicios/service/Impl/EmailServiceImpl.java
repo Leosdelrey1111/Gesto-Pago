@@ -78,7 +78,7 @@ public class EmailServiceImpl implements EmailService {
         }
 
         boolean esExitosa = "PAGADO / APROBADO".equalsIgnoreCase(ticket.getEstatus()) || "EXITOSA".equalsIgnoreCase(ticket.getEstatus());
-        String asunto = (esExitosa ? "✅ Comprobante de Pago Aprobado" : "❌ Comprobante de Pago Rechazado")
+        String asunto = (esExitosa ? "[APROBADO] Comprobante de Pago" : "[RECHAZADO] Comprobante de Pago")
                 + " - Folio #" + ticket.getFolio() + " | GestoPago Bank";
 
         String contenidoPlano =
