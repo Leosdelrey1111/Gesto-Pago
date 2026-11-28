@@ -90,7 +90,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         return switch (resultado.tipo()) {
             case EXITO, INCIERTO -> aRespuesta(cerrada);
-            case RECHAZO -> throw new ProveedorRechazoException(resultado.codigo());
+            case RECHAZO -> throw new ProveedorRechazoException(resultado.codigo(), cerrada.getId());
             case NO_ENVIADO -> throw new ProveedorNoDisponibleException("El proveedor no recibio la solicitud");
         };
     }

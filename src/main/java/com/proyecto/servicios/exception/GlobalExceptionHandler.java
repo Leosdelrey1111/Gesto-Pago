@@ -156,10 +156,21 @@ public class GlobalExceptionHandler extends com.proyecto.servicios.controller.Va
      * GestoPago rechazo la operacion de forma concluyente (422). Solo se expone el codigo.
      */
     @ExceptionHandler(ProveedorRechazoException.class)
-    public ResponseEntity<GenericResponse<Void>> handleProveedorRechazo(ProveedorRechazoException ex) {
-        log.warn("Operacion rechazada por el proveedor. Codigo={}", ex.getCodigoProveedor());
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(),
-                Map.of("codigoProveedor", ex.getCodigoProveedor()));
+    public ResponseEntity<GenericResponse<Map<String, Object>>> handleProveedorRechazo(ProveedorRechazoException ex) {
+        log.warn("Operacion rechazada por el proveedor. Codigo={}, Folio={}", ex.getCodigoProveedor(), ex.getFolioTransaccion());
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("codigoProveedor", ex.getCodigoProveedor());
+        if (ex.getFolioTransaccion() != null) {
+            data.put("folioTransaccion", ex.getFolioTransaccion());
+        }
+        GenericResponse<Map<String, Object>> response = GenericResponse.<Map<String, Object>>builder()
+                .codigo(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .mensaje(ex.getMessage())
+                .data(data)
+                .errores(Map.of("codigoProveedor", ex.getCodigoProveedor()))
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
 
     /**

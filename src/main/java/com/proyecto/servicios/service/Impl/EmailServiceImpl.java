@@ -102,16 +102,24 @@ public class EmailServiceImpl implements EmailService {
                 "Atentamente,\n" +
                 "GestoPago Bank";
 
-        String contenidoHtml = construirHtmlTicket(ticket, esExitosa);
+        String contenidoHtml;
+        try {
+            contenidoHtml = construirHtmlTicket(ticket, esExitosa);
+        } catch (Exception e) {
+            log.error("[EMAIL COMPROBANTE] Error construyendo HTML del ticket: {}. Usando contenido plano.", e.getMessage(), e);
+            contenidoHtml = "<pre style='font-family:sans-serif;font-size:14px;color:#1e293b;line-height:1.6;'>" + contenidoPlano + "</pre>";
+        }
 
-        if (resendApiKey != null && !resendApiKey.trim().isEmpty()) {
-            if (enviarConResend(destinatario, asunto, contenidoPlano, contenidoHtml)) {
+        // Prioridad 1: Brevo (Sendinblue) vía HTTPS REST (Puerto 443 - garantizado en Railway)
+        if (brevoApiKey != null && !brevoApiKey.trim().isEmpty()) {
+            if (enviarConBrevo(destinatario, asunto, contenidoPlano, contenidoHtml)) {
                 return;
             }
         }
 
-        if (brevoApiKey != null && !brevoApiKey.trim().isEmpty()) {
-            if (enviarConBrevo(destinatario, asunto, contenidoPlano, contenidoHtml)) {
+        // Prioridad 2: Resend vía HTTPS REST
+        if (resendApiKey != null && !resendApiKey.trim().isEmpty()) {
+            if (enviarConResend(destinatario, asunto, contenidoPlano, contenidoHtml)) {
                 return;
             }
         }

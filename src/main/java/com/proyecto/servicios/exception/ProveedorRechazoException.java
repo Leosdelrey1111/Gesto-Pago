@@ -7,13 +7,23 @@ package com.proyecto.servicios.exception;
 public class ProveedorRechazoException extends OperacionNoProcesableException {
 
     private final String codigoProveedor;
+    private final Long folioTransaccion;
 
-    public ProveedorRechazoException(String codigoProveedor) {
+    public ProveedorRechazoException(String codigoProveedor, Long folioTransaccion) {
         super("El proveedor rechazo la operacion. Codigo: " + codigoProveedor);
         this.codigoProveedor = codigoProveedor;
+        this.folioTransaccion = folioTransaccion;
+    }
+
+    public ProveedorRechazoException(String codigoProveedor) {
+        this(codigoProveedor, null);
     }
 
     public String getCodigoProveedor() {
         return codigoProveedor;
+    }
+
+    public Long getFolioTransaccion() {
+        return folioTransaccion;
     }
 }
