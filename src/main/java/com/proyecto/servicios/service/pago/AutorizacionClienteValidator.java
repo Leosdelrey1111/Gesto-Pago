@@ -65,7 +65,11 @@ public class AutorizacionClienteValidator {
             );
         }
 
-        if (passwordOPin != null && !passwordOPin.isBlank()) {
+        // Si es una operación financiera que requiere autorización (passwordOPin != null)
+        if (passwordOPin != null) {
+            if (passwordOPin.isBlank()) {
+                throw new UnauthorizedAccessException("El PIN transaccional es obligatorio");
+            }
             boolean coincidePin = false;
             if (usuario.getPinTransaccional() != null && !usuario.getPinTransaccional().isBlank()) {
                 coincidePin = passwordEncoder.matches(passwordOPin, usuario.getPinTransaccional());
@@ -76,8 +80,6 @@ public class AutorizacionClienteValidator {
                 log.warn("[SEGURIDAD PIN] Intento de pago rechazado por PIN o contraseña incorrectos para usuario={}", correoAutenticado);
                 throw new UnauthorizedAccessException("El password o PIN de autorización es incorrecto");
             }
-        } else {
-            throw new UnauthorizedAccessException("El PIN transaccional es obligatorio");
         }
         return cuenta;
     }
