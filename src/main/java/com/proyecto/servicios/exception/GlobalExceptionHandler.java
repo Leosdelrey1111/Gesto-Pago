@@ -268,7 +268,8 @@ public class GlobalExceptionHandler extends com.proyecto.servicios.controller.Va
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponse<Void>> handleGeneralException(Exception ex) {
         log.error("Error interno del servidor no controlado: {}", ex.getMessage(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Ha ocurrido un error interno en el servidor.");
+        String detalle = ex.getClass().getSimpleName() + ": " + (ex.getMessage() != null ? ex.getMessage() : "Error sin detalle");
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Ha ocurrido un error interno en el servidor: " + detalle);
     }
 
     // =========================================================================
