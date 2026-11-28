@@ -69,10 +69,11 @@ public class EmailServiceImpl implements EmailService {
         enviarConSmtp(destinatario, asunto, contenidoPlano, contenidoHtml);
     }
 
-    @Async
     @Override
     public void enviarTicketComprobante(String destinatario, com.proyecto.servicios.model.transaccion.TicketResponseDTO ticket) {
+        log.info("[EMAIL COMPROBANTE] Iniciando envío de ticket folio #{} hacia {}", ticket != null ? ticket.getFolio() : "null", destinatario);
         if (destinatario == null || destinatario.trim().isEmpty() || ticket == null) {
+            log.warn("[EMAIL COMPROBANTE] Destinatario o ticket nulos. No se puede enviar.");
             return;
         }
 

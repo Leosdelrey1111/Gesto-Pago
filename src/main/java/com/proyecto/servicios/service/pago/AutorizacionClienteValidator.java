@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Verifica quien es el cliente y que puede operar la cuenta, ANTES de tomar bloqueos o llamar al proveedor.
  * La identidad sale del JWT validado por el filtro de seguridad, nunca del cuerpo de la peticion.
  */
+@lombok.extern.slf4j.Slf4j
 @Component
 public class AutorizacionClienteValidator {
 
@@ -64,12 +65,19 @@ public class AutorizacionClienteValidator {
             );
         }
 
-        if (passwordOPin != null) {
-            boolean coincidePassword = passwordEncoder.matches(passwordOPin, usuario.getPassword());
-            boolean coincidePin = usuario.getPinTransaccional() != null && passwordEncoder.matches(passwordOPin, usuario.getPinTransaccional());
-            if (!coincidePassword && !coincidePin) {
-                throw new UnauthorizedAccessException("El password o PIN de autorizacion es incorrecto");
+        if (passwordOPin != null && !passwordOPin.isBlank()) {
+            boolean coincidePin = false;
+            if (usuario.getPinTransaccional() != null && !usuario.getPinTransaccional().isBlank()) {
+                coincidePin = passwordEncoder.matches(passwordOPin, usuario.getPinTransaccional());
             }
+            boolean coincidePassword = passwordEncoder.matches(passwordOPin, usuario.getPassword());
+
+            if (!coincidePin && !coincidePassword) {
+                log.warn("[SEGURIDAD PIN] Intento de pago rechazado por PIN o contraseña incorrectos para usuario={}", correoAutenticado);
+                throw new UnauthorizedAccessException("El password o PIN de autorización es incorrecto");
+            }
+        } else {
+            throw new UnauthorizedAccessException("El PIN transaccional es obligatorio");
         }
         return cuenta;
     }
